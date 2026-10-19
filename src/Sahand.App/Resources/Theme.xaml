@@ -5,33 +5,35 @@
         تم روشن برنامه — پالت خنثی مهندسی با accent آبی فولادی.
         فونت وزیرمتن از Resource همراه بسته لود می‌شود (مسیر pack)؛ نصب فونت در Windows لازم نیست.
         همهٔ متن‌ها فارسی و اندازه‌ها برای مقیاس ۱۲۵–۲۰۰٪ DPI خوانا هستند.
-        بهبود خوانایی ۰٫۳٫۰: کنتراست متن‌های ثانویه/کناری بالا رفت؛ وضعیت انتخاب/هاور منوی
-        کناری با رنگ‌های اختصاصی واضح شد (به‌جای شفافیت ۰٫۸۵ که تقریباً نامرئی بود).
+        بازطراحی خوانایی ۰٫۴٫۰: منوی کناری آبی فولادی روشن‌تر با متن سفید خالص و فیلدهای فرعی
+        پرکنتراست (هیچ متن تیره‌ای روی زمینهٔ تیره نمی‌ماند)؛ حاشیه‌ها پررنگ‌تر؛ متن ثانویهٔ صفحات
+        تیره‌تر تا کنتراست WCAG-AA روی زمینهٔ روشن برقرار بماند.
     -->
 
     <!-- فونت وزیرمتن (استاتیک — بدون وابستگی به Variable Font). -->
     <FontFamily x:Key="Vazirmatn">pack://application:,,,/Fonts/#Vazirmatn</FontFamily>
 
-    <!-- پالت تم روشن (بهبود کنتراست ۰٫۳٫۰). -->
-    <SolidColorBrush x:Key="Brush.WindowBackground" Color="#F4F6F8"/>
+    <!-- پالت تم روشن (بازطراحی کنتراست ۰٫۴٫۰). -->
+    <SolidColorBrush x:Key="Brush.WindowBackground" Color="#F1F4F7"/>
     <SolidColorBrush x:Key="Brush.PanelBackground" Color="#FFFFFF"/>
-    <SolidColorBrush x:Key="Brush.Border" Color="#C9D1D9"/>
-    <SolidColorBrush x:Key="Brush.TextPrimary" Color="#1B242E"/>
-    <SolidColorBrush x:Key="Brush.TextSecondary" Color="#46525C"/>
+    <SolidColorBrush x:Key="Brush.Border" Color="#9FADBA"/>
+    <SolidColorBrush x:Key="Brush.TextPrimary" Color="#16202A"/>
+    <SolidColorBrush x:Key="Brush.TextSecondary" Color="#3D4A55"/>
     <SolidColorBrush x:Key="Brush.Accent" Color="#0F6BAE"/>
     <SolidColorBrush x:Key="Brush.AccentSoft" Color="#E3F0FA"/>
-    <SolidColorBrush x:Key="Brush.Success" Color="#1C7A3D"/>
-    <SolidColorBrush x:Key="Brush.Warning" Color="#8A5E00"/>
+    <SolidColorBrush x:Key="Brush.Success" Color="#166B34"/>
+    <SolidColorBrush x:Key="Brush.Warning" Color="#7A5300"/>
     <SolidColorBrush x:Key="Brush.Error" Color="#B3261E"/>
 
-    <!-- پالت منوی کناری — متن‌های روشن‌تر و حالت‌های واضح انتخاب/هاور (۰٫۳٫۰). -->
-    <SolidColorBrush x:Key="Brush.Sidebar" Color="#15242F"/>
-    <SolidColorBrush x:Key="Brush.SidebarText" Color="#EAF2F7"/>
-    <SolidColorBrush x:Key="Brush.SidebarSubtitle" Color="#AEC2CE"/>
-    <SolidColorBrush x:Key="Brush.SidebarHover" Color="#21394A"/>
+    <!-- پالت منوی کناری ۰٫۴٫۰ — زمینهٔ آبی فولادی روشن‌تر؛ متن‌ها سفید خالص/خیلی روشن. -->
+    <SolidColorBrush x:Key="Brush.Sidebar" Color="#1E3E5E"/>
+    <SolidColorBrush x:Key="Brush.SidebarText" Color="#FFFFFF"/>
+    <SolidColorBrush x:Key="Brush.SidebarSubtitle" Color="#D8E5EF"/>
+    <SolidColorBrush x:Key="Brush.SidebarHover" Color="#2E587E"/>
     <SolidColorBrush x:Key="Brush.SidebarSelected" Color="#0F6BAE"/>
     <SolidColorBrush x:Key="Brush.SidebarSelectedText" Color="#FFFFFF"/>
-    <SolidColorBrush x:Key="Brush.SidebarAccentBar" Color="#5FB0F2"/>
+    <SolidColorBrush x:Key="Brush.SidebarAccentBar" Color="#8CCBFA"/>
+    <SolidColorBrush x:Key="Brush.SidebarSeparator" Color="#3E627F"/>
 
     <sys:Double x:Key="FontSize.Base">14</sys:Double>
     <sys:Double x:Key="FontSize.Header">18</sys:Double>

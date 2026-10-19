@@ -18,22 +18,22 @@
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
 
-        <!-- نوار کناری راست — برند با آیکون رسمی خود برنامه (بهبود ۰٫۳٫۰) -->
-        <Border Grid.Column="0" Background="{StaticResource Brush.Sidebar}" Padding="0,12">
+        <!-- نوار کناری راست — برند با آیکون رسمی خود برنامه؛ بزرگ‌تر برای دیده‌شدن (درخواست کارفرما ۰٫۴٫۰) -->
+        <Border Grid.Column="0" Background="{StaticResource Brush.Sidebar}" Padding="0,14">
             <StackPanel>
-                <StackPanel HorizontalAlignment="Center" Margin="8,4,8,6">
-                    <Image Source="Resources/ScrewIcon.png" Width="44" Height="44"
+                <StackPanel HorizontalAlignment="Center" Margin="8,6,8,8">
+                    <Image Source="Resources/ScrewIcon.png" Width="76" Height="76"
                            RenderOptions.BitmapScalingMode="HighQuality"
                            ToolTip="طراح پیچ و مهره سهند"/>
                 </StackPanel>
                 <TextBlock Text="طراح پیچ و مهره سهند"
-                           Foreground="White" FontSize="16" FontWeight="Bold"
+                           Foreground="White" FontSize="17" FontWeight="Bold"
                            HorizontalAlignment="Center" Margin="8,2,8,4" TextAlignment="Center"/>
                 <TextBlock Text="Sahand Screw &amp; Nut Designer"
-                           Foreground="{StaticResource Brush.SidebarSubtitle}" FontSize="12"
+                           Foreground="{StaticResource Brush.SidebarSubtitle}" FontSize="12.5"
                            HorizontalAlignment="Center" Margin="8,0,8,10" TextAlignment="Center"/>
 
-                <Separator Background="#24394A" Height="1" Margin="10,0,10,10"/>
+                <Separator Background="{StaticResource Brush.SidebarSeparator}" Height="1" Margin="10,0,10,10"/>
 
                 <ListBox x:Name="NavList" Background="Transparent" BorderThickness="0"
                          SelectionChanged="OnNavSelectionChanged"
@@ -43,8 +43,8 @@
                         <Style TargetType="ListBoxItem">
                             <Setter Property="Foreground" Value="{StaticResource Brush.SidebarText}"/>
                             <Setter Property="FontFamily" Value="{StaticResource Vazirmatn}"/>
-                            <Setter Property="FontSize" Value="15"/>
-                            <Setter Property="Padding" Value="12,10"/>
+                            <Setter Property="FontSize" Value="16"/>
+                            <Setter Property="Padding" Value="12,11"/>
                             <Setter Property="Margin" Value="0,1"/>
                             <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
                             <Setter Property="Template">
