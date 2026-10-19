@@ -91,9 +91,14 @@ public static class ThreadValidator
         }
 
         // هشدارهای غیرمسدودکننده.
-        if (spec.Family is ThreadFamily.Npt or ThreadFamily.Bsp && spec.TaperDegrees <= 0)
+        // NPT همیشه مخروطی است (۱:۱۶)؛ BSP موازی (BSPP) معتبر است و فقط مخروطی‌بودن BSPT اختیاری.
+        if (spec.Family == ThreadFamily.Npt && spec.TaperDegrees <= 0)
             result.AddWarning("TaperDegrees",
-                $"خانوادهٔ {spec.Family} ذاتاً مخروطی است؛ زاویهٔ مخروط صفر گذاشته شده. برای NPT مقدار ~۱٫۷۹ درجه توصیه می‌شود.");
+                "NPT ذاتاً مخروطی است؛ زاویهٔ مخروط صفر گذاشته شده. مقدار ~۱٫۷۹ درجه (۱:۱۶) توصیه می‌شود.");
+
+        if (spec.Family == ThreadFamily.Npt && spec.TaperDegrees is > 0 and (< 1.0 or > 3.0))
+            result.AddWarning("TaperDegrees",
+                $"مخروط NPT غیرمعمول است ({spec.TaperDegrees:0.##}° در برابر ~۱٫۷۹° استاندارد ۱:۱۶)؛ پیش از ساخت بررسی کنید.");
 
         if (spec.ModelingMode == ThreadModelingMode.Simplified)
             result.AddWarning("ModelingMode",
