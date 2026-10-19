@@ -18,15 +18,22 @@
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
 
-        <!-- نوار کناری راست -->
+        <!-- نوار کناری راست — برند با آیکون رسمی خود برنامه (بهبود ۰٫۳٫۰) -->
         <Border Grid.Column="0" Background="{StaticResource Brush.Sidebar}" Padding="0,12">
             <StackPanel>
+                <StackPanel HorizontalAlignment="Center" Margin="8,4,8,6">
+                    <Image Source="Resources/ScrewIcon.png" Width="44" Height="44"
+                           RenderOptions.BitmapScalingMode="HighQuality"
+                           ToolTip="طراح پیچ و مهره سهند"/>
+                </StackPanel>
                 <TextBlock Text="طراح پیچ و مهره سهند"
                            Foreground="White" FontSize="16" FontWeight="Bold"
-                           HorizontalAlignment="Center" Margin="8,4,8,14" TextAlignment="Center"/>
+                           HorizontalAlignment="Center" Margin="8,2,8,4" TextAlignment="Center"/>
                 <TextBlock Text="Sahand Screw &amp; Nut Designer"
-                           Foreground="#8FA6B3" FontSize="11"
-                           HorizontalAlignment="Center" Margin="8,0,8,18" TextAlignment="Center"/>
+                           Foreground="{StaticResource Brush.SidebarSubtitle}" FontSize="12"
+                           HorizontalAlignment="Center" Margin="8,0,8,10" TextAlignment="Center"/>
+
+                <Separator Background="#24394A" Height="1" Margin="10,0,10,10"/>
 
                 <ListBox x:Name="NavList" Background="Transparent" BorderThickness="0"
                          SelectionChanged="OnNavSelectionChanged"
@@ -36,24 +43,35 @@
                         <Style TargetType="ListBoxItem">
                             <Setter Property="Foreground" Value="{StaticResource Brush.SidebarText}"/>
                             <Setter Property="FontFamily" Value="{StaticResource Vazirmatn}"/>
-                            <Setter Property="FontSize" Value="14"/>
-                            <Setter Property="Padding" Value="10,9"/>
+                            <Setter Property="FontSize" Value="15"/>
+                            <Setter Property="Padding" Value="12,10"/>
                             <Setter Property="Margin" Value="0,1"/>
                             <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
                             <Setter Property="Template">
                                 <Setter.Value>
                                     <ControlTemplate TargetType="ListBoxItem">
-                                        <Border x:Name="itemBorder" Background="Transparent"
-                                                CornerRadius="6" Padding="{TemplateBinding Padding}">
-                                            <ContentPresenter/>
-                                        </Border>
+                                        <Grid>
+                                            <!-- نوار accent سمت راست آیتم انتخاب‌شده (نشانهٔ بصری RTL). -->
+                                            <Border x:Name="accentBar" Width="3" CornerRadius="1.5"
+                                                    HorizontalAlignment="Right" Margin="0,1" Background="Transparent"/>
+                                            <Border x:Name="itemBorder" Background="Transparent"
+                                                    CornerRadius="6" Padding="{TemplateBinding Padding}" Margin="0,0,4,0">
+                                                <ContentPresenter/>
+                                            </Border>
+                                        </Grid>
                                         <ControlTemplate.Triggers>
                                             <Trigger Property="IsSelected" Value="True">
                                                 <Setter TargetName="itemBorder" Property="Background"
                                                         Value="{StaticResource Brush.SidebarSelected}"/>
+                                                <Setter Property="Foreground"
+                                                        Value="{StaticResource Brush.SidebarSelectedText}"/>
+                                                <Setter Property="FontWeight" Value="Bold"/>
+                                                <Setter TargetName="accentBar" Property="Background"
+                                                        Value="{StaticResource Brush.SidebarAccentBar}"/>
                                             </Trigger>
                                             <Trigger Property="IsMouseOver" Value="True">
-                                                <Setter TargetName="itemBorder" Property="Opacity" Value="0.85"/>
+                                                <Setter TargetName="itemBorder" Property="Background"
+                                                        Value="{StaticResource Brush.SidebarHover}"/>
                                             </Trigger>
                                         </ControlTemplate.Triggers>
                                     </ControlTemplate>
@@ -109,7 +127,7 @@
                 <!-- وضعیت آفلاین/صف گزارش در پایین نوار -->
                 <StackPanel VerticalAlignment="Bottom" Margin="10,20,10,0">
                     <TextBlock x:Name="QueueStatusText" Text="گزارش‌ها: صف محلی"
-                               Foreground="#8FA6B3" FontSize="11" TextAlignment="Center"/>
+                               Foreground="{StaticResource Brush.SidebarSubtitle}" FontSize="12" TextAlignment="Center"/>
                 </StackPanel>
             </StackPanel>
         </Border>
