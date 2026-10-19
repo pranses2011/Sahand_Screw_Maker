@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="Sahand Screw &amp; Nut Designer logo">
+  <!-- لوگوی «طراح پیچ و مهره سهند»: مهرهٔ شش‌گوش از نمای روبه‌رو با رزوهٔ داخلی زعفرانی -->
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#26344b"/>
+      <stop offset="1" stop-color="#0c1320"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.5" cy="0.38" r="0.62">
+      <stop offset="0" stop-color="#3d5273" stop-opacity="0.55"/>
+      <stop offset="1" stop-color="#0c1320" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="steel" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#eef2f8"/>
+      <stop offset="0.42" stop-color="#aebacf"/>
+      <stop offset="1" stop-color="#5a6b83"/>
+    </linearGradient>
+    <linearGradient id="chamfer" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#8ea1bb"/>
+      <stop offset="1" stop-color="#3d4d64"/>
+    </linearGradient>
+    <radialGradient id="bore" cx="0.5" cy="0.45" r="0.65">
+      <stop offset="0" stop-color="#0a0f18"/>
+      <stop offset="1" stop-color="#182234"/>
+    </radialGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffd977"/>
+      <stop offset="1" stop-color="#e69d1f"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="512" height="512" rx="112" fill="url(#bg)"/>
+  <rect width="512" height="512" rx="112" fill="url(#glow)"/>
+
+  <!-- بدنهٔ مهرهٔ شش‌گوش -->
+  <path d="M256 82 L408 170 L408 342 L256 430 L104 342 L104 170 Z"
+        fill="url(#steel)" stroke="#0c1320" stroke-width="11" stroke-linejoin="round"/>
+
+  <!-- سطح میانی (شش‌گوش داخلی پس از پخ) -->
+  <path d="M256 118 L377 188 L377 324 L256 394 L135 324 L135 188 Z" fill="url(#chamfer)"/>
+
+  <!-- حفرهٔ داخلی -->
+  <circle cx="256" cy="256" r="104" fill="url(#bore)" stroke="#0c1320" stroke-width="7"/>
+
+  <!-- رزوهٔ داخلی: حلقه‌های زعفرانی -->
+  <circle cx="256" cy="256" r="80" fill="none" stroke="url(#gold)" stroke-width="11" stroke-dasharray="15 13"/>
+  <circle cx="256" cy="256" r="54" fill="none" stroke="url(#gold)" stroke-width="9" stroke-dasharray="11 11" opacity="0.85"/>
+  <circle cx="256" cy="256" r="31" fill="none" stroke="url(#gold)" stroke-width="8" stroke-dasharray="8 9" opacity="0.68"/>
+
+  <!-- بازتاب نور روی لبهٔ بالایی -->
+  <path d="M112 168 L256 88 L400 168" fill="none" stroke="#ffffff" stroke-opacity="0.28"
+        stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
