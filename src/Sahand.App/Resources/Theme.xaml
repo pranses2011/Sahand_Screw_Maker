@@ -5,25 +5,33 @@
         تم روشن برنامه — پالت خنثی مهندسی با accent آبی فولادی.
         فونت وزیرمتن از Resource همراه بسته لود می‌شود (مسیر pack)؛ نصب فونت در Windows لازم نیست.
         همهٔ متن‌ها فارسی و اندازه‌ها برای مقیاس ۱۲۵–۲۰۰٪ DPI خوانا هستند.
+        بهبود خوانایی ۰٫۳٫۰: کنتراست متن‌های ثانویه/کناری بالا رفت؛ وضعیت انتخاب/هاور منوی
+        کناری با رنگ‌های اختصاصی واضح شد (به‌جای شفافیت ۰٫۸۵ که تقریباً نامرئی بود).
     -->
 
     <!-- فونت وزیرمتن (استاتیک — بدون وابستگی به Variable Font). -->
     <FontFamily x:Key="Vazirmatn">pack://application:,,,/Fonts/#Vazirmatn</FontFamily>
 
-    <!-- پالت تم روشن. -->
+    <!-- پالت تم روشن (بهبود کنتراست ۰٫۳٫۰). -->
     <SolidColorBrush x:Key="Brush.WindowBackground" Color="#F4F6F8"/>
     <SolidColorBrush x:Key="Brush.PanelBackground" Color="#FFFFFF"/>
-    <SolidColorBrush x:Key="Brush.Border" Color="#D8DEE4"/>
-    <SolidColorBrush x:Key="Brush.TextPrimary" Color="#1F2933"/>
-    <SolidColorBrush x:Key="Brush.TextSecondary" Color="#5B6871"/>
+    <SolidColorBrush x:Key="Brush.Border" Color="#C9D1D9"/>
+    <SolidColorBrush x:Key="Brush.TextPrimary" Color="#1B242E"/>
+    <SolidColorBrush x:Key="Brush.TextSecondary" Color="#46525C"/>
     <SolidColorBrush x:Key="Brush.Accent" Color="#0F6BAE"/>
     <SolidColorBrush x:Key="Brush.AccentSoft" Color="#E3F0FA"/>
     <SolidColorBrush x:Key="Brush.Success" Color="#1C7A3D"/>
-    <SolidColorBrush x:Key="Brush.Warning" Color="#9A6700"/>
+    <SolidColorBrush x:Key="Brush.Warning" Color="#8A5E00"/>
     <SolidColorBrush x:Key="Brush.Error" Color="#B3261E"/>
+
+    <!-- پالت منوی کناری — متن‌های روشن‌تر و حالت‌های واضح انتخاب/هاور (۰٫۳٫۰). -->
     <SolidColorBrush x:Key="Brush.Sidebar" Color="#15242F"/>
-    <SolidColorBrush x:Key="Brush.SidebarText" Color="#DCE6EC"/>
+    <SolidColorBrush x:Key="Brush.SidebarText" Color="#EAF2F7"/>
+    <SolidColorBrush x:Key="Brush.SidebarSubtitle" Color="#AEC2CE"/>
+    <SolidColorBrush x:Key="Brush.SidebarHover" Color="#21394A"/>
     <SolidColorBrush x:Key="Brush.SidebarSelected" Color="#0F6BAE"/>
+    <SolidColorBrush x:Key="Brush.SidebarSelectedText" Color="#FFFFFF"/>
+    <SolidColorBrush x:Key="Brush.SidebarAccentBar" Color="#5FB0F2"/>
 
     <sys:Double x:Key="FontSize.Base">14</sys:Double>
     <sys:Double x:Key="FontSize.Header">18</sys:Double>
@@ -103,9 +111,14 @@
         <Setter Property="BorderBrush" Value="{StaticResource Brush.Border}"/>
     </Style>
 
-    <!-- دکمهٔ ثانویه (خنثی). -->
+    <!-- دکمهٔ ثانویه (خنثی) — هاور با زمینهٔ تیره‌تر (به‌جای کاهش شفافیت نامحسوس). -->
     <Style x:Key="SecondaryButton" TargetType="Button">
         <Setter Property="Background" Value="#E7EBEF"/>
         <Setter Property="Foreground" Value="{StaticResource Brush.TextPrimary}"/>
+        <Style.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+                <Setter Property="Background" Value="#D5DDE4"/>
+            </Trigger>
+        </Style.Triggers>
     </Style>
 </ResourceDictionary>
