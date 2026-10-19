@@ -31,9 +31,20 @@ public partial class PreviewView : UserControl
         Loaded += (_, _) => RefreshDisplay();
     }
 
-    private void OnVersionChanged(object sender, RoutedEventArgs e) => RefreshDisplay();
+    private void OnVersionChanged(object sender, RoutedEventArgs e)
+    {
+        // NominalRadio در XAML با IsChecked=True است؛ رخداد Checked در حین
+        // InitializeComponent پیش از ساخت PrintRadio/Viewport می‌گیرد — گارد بارگذاری (بازبینی ۰٫۲٫۰، D2).
+        if (PrintRadio is null || Viewport is null) return;
+        RefreshDisplay();
+    }
 
-    private void OnMaterialChanged(object sender, SelectionChangedEventArgs e) => RefreshDisplay();
+    private void OnMaterialChanged(object sender, SelectionChangedEventArgs e)
+    {
+        // همان گارد برای رخداد زودهنگام/تغییر متریال پیش از آمادگی نما.
+        if (PrintRadio is null || Viewport is null) return;
+        RefreshDisplay();
+    }
 
     private Mesh? SelectedMesh => PrintRadio.IsChecked == true
         ? _owner.Session.PrintMesh ?? _owner.Session.NominalMesh
@@ -41,6 +52,26 @@ public partial class PreviewView : UserControl
 
     /// <summary>نمایش مجدد مدل انتخابی با رنگ متریال و به‌روزرسانی خلاصه‌ها.</summary>
     private async void RefreshDisplay()
+    {
+        // کل مسیر UI پوشش‌دار است تا خطای نمایش، برنامه را نبندد (بازبینی ۰٫۲٫۰، D5).
+        try
+        {
+            await RefreshDisplayCore();
+        }
+        catch (Exception ex)
+        {
+            try
+            {
+                ValidationInfoText.Text = $"نمایش ناموفق: {ex.Message}";
+            }
+            catch
+            {
+                // نما در حال بسته‌شدن است؛ خروج بی‌صدا امن است.
+            }
+        }
+    }
+
+    private async System.Threading.Tasks.Task RefreshDisplayCore()
     {
         var mesh = SelectedMesh;
         var isPrint = PrintRadio.IsChecked == true && _owner.Session.PrintMesh is not null;
