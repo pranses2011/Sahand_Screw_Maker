@@ -36,6 +36,12 @@ public enum HeadStyle
 
     /// <summary>سر نیم‌گرد (Pan).</summary>
     Pan,
+
+    /// <summary>سر دکمه‌ای (Button) — گنبد کم‌انحنا با لبهٔ گرد؛ با حفرهٔ آلن/تورکس روی پلتفرم قله (گسترش ۰٫۴٫۰).</summary>
+    Button,
+
+    /// <summary>سر فلنجی (Flange) — شش‌گوش با دیسک فلنج در پایه؛ توزیع فشار روی سطح نرم (گسترش ۰٫۴٫۰).</summary>
+    Flange,
 }
 
 /// <summary>نوع محرک/جای ابزار روی سر.</summary>
@@ -49,6 +55,12 @@ public enum DriveStyle
 
     /// <summary>حفرهٔ شش‌پر تورکس (ISO 10664) — گسترش ۰٫۳٫۰.</summary>
     Torx,
+
+    /// <summary>آلن امنیتی با پین مرکزی (Tamper-Resistant Hex) — آچار معمولی قفل می‌شود (گسترش ۰٫۴٫۰).</summary>
+    PinHex,
+
+    /// <summary>تورکس امنیتی با پین مرکزی (Security Torx / Tamper-Resistant Torx) — گسترش ۰٫۴٫۰.</summary>
+    SecurityTorx,
 
     /// <summary>شیار تخت (Slot).</summary>
     Slot,
