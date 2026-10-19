@@ -52,6 +52,12 @@ public sealed record BoltSpec
     /// <summary>عمق حفرهٔ آلن برحسب میلی‌متر.</summary>
     public double? HexSocketDepthMm { get; init; }
 
+    /// <summary>قطر اسمی حفرهٔ تورکس (روی پَرها، E) برحسب میلی‌متر — فقط برای <see cref="DriveStyle.Torx"/> (گسترش ۰٫۳٫۰).</summary>
+    public double? TorxAcrossLobesMm { get; init; }
+
+    /// <summary>عمق حفرهٔ تورکس برحسب میلی‌متر.</summary>
+    public double? TorxDepthMm { get; init; }
+
     /// <summary>پهنای شیار تخت/صلیبی برحسب میلی‌متر — فقط برای محرک شیاری.</summary>
     public double? SlotWidthMm { get; init; }
 
