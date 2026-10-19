@@ -102,7 +102,7 @@ public static class ThreadedSurface
     }
 
     /// <summary>
-    /// ساق رزوه‌دار کامل را می‌سازد: سطح جانبی یکپارچه + درپوش‌های دلخواه دو سر.
+    /// ساق رزوه‌دار کامل را می‌سازد و حلقه‌های رأس هر تراز را برمی‌گرداند (برای درپوش‌های حلقه‌ای سر).
     /// </summary>
     /// <param name="mesh">مش مقصد.</param>
     /// <param name="spec">مشخصات رزوه.</param>
@@ -117,7 +117,8 @@ public static class ThreadedSurface
     /// <param name="zStepMm">گام z شبکه.</param>
     /// <param name="capStart">درپوش در zStart (زیر سرِ پیچ لازم نیست؛ حلقهٔ سر می‌پوشاند).</param>
     /// <param name="capEnd">درپوش نوک.</param>
-    public static void AddThreadedShank(
+    /// <returns>حلقه‌های رأس به‌ازای هر تراز z (صعودی).</returns>
+    public static int[][] AddThreadedShank(
         MeshBuilder mesh,
         ThreadSpec spec,
         RadialProfileFunction profile,
@@ -156,13 +157,8 @@ public static class ThreadedSurface
 
         var zLevels = BuildZLevels(zStartMm, zEndMm, zStepMm, [.. special]);
 
-        RadialSurface.AddOutwardSurface(mesh, grid, radiusAt, zLevels);
-
-        if (capStart)
-            RadialSurface.AddDiscCap(mesh, grid, theta => radiusAt(theta, zStartMm), zStartMm, solidBelow: false);
-
-        if (capEnd)
-            RadialSurface.AddDiscCap(mesh, grid, theta => radiusAt(theta, zEndMm), zEndMm, solidBelow: true);
+        // درپوش‌ها با رأس‌های مشترکِ همان سطح ساخته می‌شوند تا مش watertight بماند.
+        return RadialSurface.AddOutwardSurface(mesh, grid, radiusAt, zLevels, capFirst: capStart, capLast: capEnd);
     }
 
     /// <summary>
