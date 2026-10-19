@@ -15,4 +15,9 @@
     <ProjectReference Include="..\Sahand.Core\Sahand.Core.csproj" />
   </ItemGroup>
 
+  <!-- دسترسی آزمون‌های واحد به دریچه‌های internal (تنها برای تست — سند ۶-۱). -->
+  <ItemGroup>
+    <InternalsVisibleTo Include="Sahand.Reporting.Tests" />
+  </ItemGroup>
+
 </Project>

@@ -27,6 +27,15 @@ public sealed class RawSmtpClient
     /// <summary>مدت مهلت هر عملیات شبکه.</summary>
     public TimeSpan Timeout { get; set; } = TimeSpan.FromSeconds(20);
 
+    /// <summary>
+    /// دریچهٔ آزمون (internal): اجازهٔ متن خام فقط برای سرور حلقهٔ محلی آزمون‌ها.
+    /// </summary>
+    /// <remarks>
+    /// این گزینه در UI/تنظیمات قابل‌ تنظیم نیست و فقط با InternalsVisibleTo برای آزمون‌های
+    /// دیالوگ SMTP در دسترس است؛ سیاست امنیتی کاربر نهایی همیشه TLS اجباری می‌ماند.
+    /// </remarks>
+    internal bool AllowPlaintextLoopbackForTests { get; set; }
+
     /// <summary>حداکثر اندازهٔ ضمیمه (سند ۵-۶: سقف اندازه).</summary>
     public const long MaxAttachmentBytes = 2 * 1024 * 1024;
 
@@ -112,6 +121,12 @@ public sealed class RawSmtpClient
                 log.AppendLine(ehloTls.Log);
                 if (!ehloTls.IsPositive)
                     return new SmtpResult(false, "سرور پس از TLS ضمنی به EHLO پاسخ مثبت نداد.", log.ToString());
+            }
+            else if (AllowPlaintextLoopbackForTests && System.Net.IPAddress.IsLoopback(
+                System.Net.IPAddress.Parse(settings.Host)))
+            {
+                // فقط مسیر آزمون داخلی — دیالوگ کامل بدون TLS روی حلقهٔ محلی.
+                log.AppendLine("C: [TEST] plaintext loopback");
             }
             else
             {
