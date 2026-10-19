@@ -1,0 +1,83 @@
+<UserControl x:Class="Sahand.App.Views.ExportView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <!--
+        خروجی — فرمت/کیفیت/مسیر با ماتریس قابلیت صادقانه (سند ۴-۳/۴-۵).
+        فرمت‌های غیرفعال با دلیل فارسی غیرفعال می‌مانند (EXP-09: بدون فایل جعلی).
+    -->
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="10" MaxWidth="760" HorizontalAlignment="Right">
+            <TextBlock Text="خروجی" FontSize="{StaticResource FontSize.Header}" FontWeight="Bold" Margin="0,0,0,6"/>
+            <TextBlock Text="نسخهٔ خروجی و هشدارهای هر فرمت را بازبینی کنید؛ جلوگیری از بازنویسی فایل موجود فعال است."
+                       Foreground="{StaticResource Brush.TextSecondary}"
+                       FontSize="{StaticResource FontSize.Small}" TextWrapping="Wrap" Margin="0,0,0,10"/>
+
+            <!-- انتخاب نسخه -->
+            <GroupBox Header="نسخهٔ مدل" Margin="0,0,0,10">
+                <StackPanel Orientation="Horizontal">
+                    <RadioButton x:Name="NominalRadio" GroupName="ExportVersion" Content="نسخهٔ اسمی"
+                                 IsChecked="True" Margin="0,0,14,0" VerticalAlignment="Center"/>
+                    <RadioButton x:Name="PrintRadio" GroupName="ExportVersion" Content="نسخهٔ چاپی (اگر ساخته باشید)"
+                                 VerticalAlignment="Center"/>
+                </StackPanel>
+            </GroupBox>
+
+            <!-- فرمت: ماتریس قابلیت -->
+            <GroupBox Header="فرمت خروجی" Margin="0,0,0,10">
+                <StackPanel x:Name="FormatListPanel"/>
+            </GroupBox>
+
+            <GroupBox Header="کیفیت و واحد" Margin="0,0,0,10">
+                <StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,4">
+                        <TextBlock Text="کیفیت مش:" Width="150" VerticalAlignment="Center"
+                                   ToolTip="دو preset متفاوت تفاوت عددی وجه‌ها دارند"/>
+                        <ComboBox x:Name="QualityBox" Width="180">
+                            <ComboBoxItem Content="پیش‌نویس (کم‌جزئیات)" Tag="Draft"/>
+                            <ComboBoxItem Content="متعادل (پیش‌فرض)" Tag="Balanced" IsSelected="True"/>
+                            <ComboBoxItem Content="دقیق" Tag="Fine"/>
+                            <ComboBoxItem Content="بسیار دقیق (سنگین)" Tag="VeryFine"/>
+                        </ComboBox>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,4">
+                        <TextBlock Text="واحد فایل:" Width="150" VerticalAlignment="Center"/>
+                        <ComboBox x:Name="UnitBox" Width="180">
+                            <ComboBoxItem Content="میلی‌متر" Tag="Millimeter" IsSelected="True"/>
+                            <ComboBoxItem Content="اینچ" Tag="Inch"/>
+                        </ComboBox>
+                    </StackPanel>
+                    <CheckBox x:Name="AsciiCheck" Content="خروجی متنی (ASCII) به‌جای باینری — STL/PLY"
+                              Margin="0,6,0,0"/>
+                </StackPanel>
+            </GroupBox>
+
+            <GroupBox Header="فایل مقصد" Margin="0,0,0,10">
+                <StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,4">
+                        <TextBox x:Name="PathBox" Width="500" FlowDirection="LeftToRight"
+                                 Text="bolt.ssnd-export"/>
+                        <Button Content="انتخاب مسیر…" Style="{StaticResource SecondaryButton}"
+                                Margin="8,0,0,0" Click="OnBrowseClick"/>
+                    </StackPanel>
+                </StackPanel>
+            </GroupBox>
+
+            <StackPanel Orientation="Horizontal" Margin="0,4,0,10">
+                <Button x:Name="ExportButton" Content="اعتبارسنجی و خروجی" MinWidth="160" Click="OnExportClick"/>
+            </StackPanel>
+
+            <Border Background="{StaticResource Brush.AccentSoft}" CornerRadius="6" Padding="10">
+                <StackPanel>
+                    <TextBlock x:Name="ResultText" Text="وضعیت: آماده" FontWeight="Bold" TextWrapping="Wrap"/>
+                    <TextBlock x:Name="ResultDetailsText" Text=""
+                               FontSize="{StaticResource FontSize.Small}" TextWrapping="Wrap"
+                               Foreground="{StaticResource Brush.TextSecondary}"/>
+                </StackPanel>
+            </Border>
+
+            <Button Content="خروجی نقشهٔ دوبعدی پروفیل رزوه (DXF)" Style="{StaticResource SecondaryButton}"
+                    Margin="0,10,0,0" Click="OnDxfClick"
+                    ToolTip="نقشهٔ پروفیل یک گام رزوه — خروجی دوبعدی مکمل (جانشین مدل سه‌بعدی نیست)"/>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>
