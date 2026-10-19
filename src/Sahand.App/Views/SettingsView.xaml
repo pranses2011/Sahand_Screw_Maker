@@ -1,0 +1,117 @@
+<UserControl x:Class="Sahand.App.Views.SettingsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <!--
+        تنظیمات و گزارش — زبان ارقام/واحد/autosafe، رضایت گزارش و پیکربندی SMTP (سند ۲-۷ و ۵).
+        ارسال ایمیل بدون شبکه/پیکربندی/رضایت ممکن نیست و وضعیت‌ها صادقانه نمایش داده می‌شوند.
+    -->
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="10" MaxWidth="760" HorizontalAlignment="Right">
+            <TextBlock Text="تنظیمات و گزارش" FontSize="{StaticResource FontSize.Header}"
+                       FontWeight="Bold" Margin="0,0,0,10"/>
+
+            <GroupBox Header="نمایش و واحد" Margin="0,0,0,10">
+                <StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,4">
+                        <TextBlock Text="واحد ورود/نمایش:" Width="180" VerticalAlignment="Center"/>
+                        <ComboBox x:Name="UnitBox" Width="170" SelectionChanged="OnSettingChanged">
+                            <ComboBoxItem Content="میلی‌متر" Tag="Millimeter" IsSelected="True"/>
+                            <ComboBoxItem Content="اینچ" Tag="Inch"/>
+                        </ComboBox>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,4">
+                        <TextBlock Text="ارقام فارسی:" Width="180" VerticalAlignment="Center"/>
+                        <CheckBox x:Name="PersianDigitsCheck" Checked="OnSettingChanged" Unchecked="OnSettingChanged"/>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,4">
+                        <TextBlock Text="رقم اعشار نمایش:" Width="180" VerticalAlignment="Center"/>
+                        <ComboBox x:Name="DecimalBox" Width="170" SelectionChanged="OnSettingChanged">
+                            <ComboBoxItem Content="۲" Tag="2" IsSelected="True"/>
+                            <ComboBoxItem Content="۳" Tag="3"/>
+                            <ComboBoxItem Content="۴" Tag="4"/>
+                        </ComboBox>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,4">
+                        <TextBlock Text="ذخیرهٔ خودکار (دقیقه؛ ۰=خاموش):" Width="180" VerticalAlignment="Center"/>
+                        <TextBox x:Name="AutosaveBox" Width="110" FlowDirection="LeftToRight" Text="3"
+                                 TextChanged="OnSettingChanged"/>
+                    </StackPanel>
+                </StackPanel>
+            </GroupBox>
+
+            <GroupBox Header="گزارش خطا و بازخورد (حریم خصوصی)" Margin="0,0,0,10">
+                <StackPanel>
+                    <TextBlock Text="ارسال خودکار خطا پیش‌فرض خاموش است؛ با فعال‌کردن، خطاهای غیرمنتظره (پس از پاک‌سازی اطلاعات حساس) در صف محلی ذخیره و فقط هنگام اتصال/پیکربندی ارسال می‌شوند."
+                               TextWrapping="Wrap" FontSize="{StaticResource FontSize.Small}"
+                               Foreground="{StaticResource Brush.TextSecondary}" Margin="0,0,0,8"/>
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="ارسال خودکار خطا (رضایت):" Width="220" VerticalAlignment="Center"/>
+                        <CheckBox x:Name="AutoReportCheck" Checked="OnSettingChanged" Unchecked="OnSettingChanged"/>
+                    </StackPanel>
+
+                    <Separator Margin="0,10"/>
+                    <TextBlock Text="صف گزارش‌های محلی" FontWeight="Bold" Margin="0,2,0,6"/>
+                    <DataGrid x:Name="QueueGrid" Height="150">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="نوع" Binding="{Binding Kind}" Width="80"/>
+                            <DataGridTextColumn Header="وضعیت" Binding="{Binding Status}" Width="110"/>
+                            <DataGridTextColumn Header="عنوان/ماژول" Binding="{Binding SubjectOrModule}" Width="*"/>
+                            <DataGridTextColumn Header="تلاش" Binding="{Binding AttemptCount}" Width="50"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                    <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                        <Button Content="ارسال صف (با اتصال)" MinWidth="140" Click="OnSendQueueClick"/>
+                        <Button Content="حذف گزارش انتخابی" Style="{StaticResource SecondaryButton}"
+                                Margin="10,0,0,0" MinWidth="130" Click="OnDeleteReportClick"/>
+                        <Button Content="پاک‌کردن کل صف" Style="{StaticResource SecondaryButton}"
+                                Margin="10,0,0,0" MinWidth="110" Click="OnClearQueueClick"/>
+                    </StackPanel>
+                    <TextBlock x:Name="QueueStatusText" Text=""
+                               Foreground="{StaticResource Brush.TextSecondary}"
+                               FontSize="{StaticResource FontSize.Small}" Margin="0,6,0,0" TextWrapping="Wrap"/>
+                </StackPanel>
+            </GroupBox>
+
+            <GroupBox Header="تنظیم ارسال ایمیل (SMTP با TLS)" Margin="0,0,0,10">
+                <StackPanel>
+                    <TextBlock Text="مقصد پیش‌فرض گزارش‌ها نویسندهٔ برنامه است. فرستنده باید حساب مجاز خودتان باشد؛ برای Gmail از گذرواژهٔ اپ (App Password) استفاده کنید — رمز اصلی Google هرگز وارد نکنید. رمز با DPAPI ویندوز ذخیره می‌شود."
+                               TextWrapping="Wrap" FontSize="{StaticResource FontSize.Small}"
+                               Foreground="{StaticResource Brush.TextSecondary}" Margin="0,0,0,8"/>
+                    <StackPanel Orientation="Horizontal" Margin="0,4">
+                        <TextBlock Text="سرور SMTP:" Width="180" VerticalAlignment="Center"/>
+                        <TextBox x:Name="SmtpHostBox" Width="200" FlowDirection="LeftToRight" Text="smtp.gmail.com"/>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,4">
+                        <TextBlock Text="پورت:" Width="180" VerticalAlignment="Center"/>
+                        <TextBox x:Name="SmtpPortBox" Width="80" FlowDirection="LeftToRight" Text="587"/>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,4">
+                        <TextBlock Text="نام نمایشی فرستنده:" Width="180" VerticalAlignment="Center"/>
+                        <TextBox x:Name="SmtpNameBox" Width="200" Text="کاربر طراح سهند"/>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,4">
+                        <TextBlock Text="آدرس فرستنده:" Width="180" VerticalAlignment="Center"/>
+                        <TextBox x:Name="SmtpFromBox" Width="200" FlowDirection="LeftToRight"/>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,4">
+                        <TextBlock Text="نام کاربری:" Width="180" VerticalAlignment="Center"/>
+                        <TextBox x:Name="SmtpUserBox" Width="200" FlowDirection="LeftToRight"/>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,4">
+                        <TextBlock Text="گذرواژهٔ اپ:" Width="180" VerticalAlignment="Center"
+                                   ToolTip="با DPAPI ویندوز در پروفایل کاربر رمزنگاری می‌شود؛ در هیچ فایل متنی/گزارشی نمی‌نشیند"/>
+                        <PasswordBox x:Name="SmtpPasswordBox" Width="200" FlowDirection="LeftToRight"/>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                        <Button Content="ذخیرهٔ تنظیمات SMTP" MinWidth="150" Click="OnSaveSmtpClick"/>
+                        <Button Content="آزمون تنظیمات (ارسال پیام آزمون به خودتان)" Style="{StaticResource SecondaryButton}"
+                                Margin="10,0,0,0" MinWidth="230" Click="OnTestSmtpClick"/>
+                    </StackPanel>
+                    <TextBlock x:Name="SmtpStatusText" Text=""
+                               Foreground="{StaticResource Brush.TextSecondary}" Margin="0,6,0,0"
+                               FontSize="{StaticResource FontSize.Small}" TextWrapping="Wrap"/>
+                </StackPanel>
+            </GroupBox>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>
