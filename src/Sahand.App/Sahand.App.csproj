@@ -12,6 +12,7 @@
     <RootNamespace>Sahand.App</RootNamespace>
     <AssemblyName>SahandScrewNutDesigner</AssemblyName>
     <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>app.ico</ApplicationIcon>
     <Version>0.1.0</Version>
     <Description>طراح پیچ و مهره سهند — Sahand Screw &amp; Nut Designer</Description>
     <InvariantGlobalization>false</InvariantGlobalization>
