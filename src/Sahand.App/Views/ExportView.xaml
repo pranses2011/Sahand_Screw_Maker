@@ -31,11 +31,11 @@
                 <StackPanel>
                     <StackPanel Orientation="Horizontal" Margin="0,4">
                         <TextBlock Text="کیفیت مش:" Width="150" VerticalAlignment="Center"
-                                   ToolTip="دو preset متفاوت تفاوت عددی وجه‌ها دارند"/>
+                                   ToolTip="دقیق (پیش‌فرض ۰٫۳٫۰): ۱۹۲ بخش زاویه‌ای و گام z ریزتر — رزوهٔ نرم‌تر در فایل؛ سنگین‌تر از متعادل"/>
                         <ComboBox x:Name="QualityBox" Width="180">
                             <ComboBoxItem Content="پیش‌نویس (کم‌جزئیات)" Tag="Draft"/>
-                            <ComboBoxItem Content="متعادل (پیش‌فرض)" Tag="Balanced" IsSelected="True"/>
-                            <ComboBoxItem Content="دقیق" Tag="Fine"/>
+                            <ComboBoxItem Content="متعادل" Tag="Balanced"/>
+                            <ComboBoxItem Content="دقیق (پیش‌فرض)" Tag="Fine" IsSelected="True"/>
                             <ComboBoxItem Content="بسیار دقیق (سنگین)" Tag="VeryFine"/>
                         </ComboBox>
                     </StackPanel>
