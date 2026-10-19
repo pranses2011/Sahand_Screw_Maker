@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="215" height="24" role="img" aria-label="پیش‌نمایش: سایه‌روشن هموار">
+  <title>پیش‌نمایش: سایه‌روشن هموار</title>
+  <clipPath id="r"><rect width="215" height="24" rx="6"/></clipPath>
+  <g clip-path="url(#r)">
+    <rect width="85" height="24" fill="#333a45"/>
+    <rect x="85" width="130" height="24" fill="#7c3aed"/>
+  </g>
+  <g fill="#ffffff" font-family="Tahoma, 'Segoe UI', 'Noto Sans', 'DejaVu Sans', sans-serif" font-size="12.5" text-anchor="middle" font-weight="600">
+    <text x="42" y="16.5">پیش‌نمایش</text>
+    <text x="150" y="16.5">سایه‌روشن هموار</text>
+  </g>
+</svg>
