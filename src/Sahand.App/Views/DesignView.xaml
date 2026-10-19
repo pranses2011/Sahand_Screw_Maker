@@ -146,7 +146,7 @@
                 </StackPanel>
             </Border>
 
-            <ItemsControl x:Name="ValidationMessages" ItemsSource="{Binding ValidationMessages, RelativeSource={RelativeSource AncestorType=UserControl}}">
+            <ItemsControl ItemsSource="{Binding ValidationMessages, RelativeSource={RelativeSource AncestorType=UserControl}}">
                 <ItemsControl.ItemTemplate>
                     <DataTemplate>
                         <TextBlock Text="{Binding}" TextWrapping="Wrap" Margin="0,2"

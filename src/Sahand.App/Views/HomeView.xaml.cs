@@ -4,7 +4,7 @@ using Microsoft.Win32;
 using Sahand.Core.Catalog;
 using Sahand.Core.Parts;
 using Sahand.Core.Project;
-using Sahand.Core.Threading;
+using Sahand.Core.Threads;
 using Sahand.Core.Validation;
 using Sahand.Geometry.Builders;
 using Sahand.Geometry.Meshing;

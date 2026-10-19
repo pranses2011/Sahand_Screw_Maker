@@ -3,9 +3,11 @@ using System.Windows;
 using System.Windows.Controls;
 using Sahand.Core.Catalog;
 using Sahand.Core.Parts;
-using Sahand.Core.Threading;
+using Sahand.Core.Threads;
 using Sahand.Core.Units;
 using Sahand.Core.Validation;
+using Sahand.Core.Project;
+using ValidationResult = Sahand.Core.Validation.ValidationResult;
 using Sahand.Geometry.Builders;
 using Sahand.Geometry.Meshing;
 
@@ -152,10 +154,15 @@ public partial class DesignView : UserControl
     /// <summary>ساخت سند پروژه از روی فرم — با پارسر عددی امن (ارقام فارسی/اعشار فارسی).</summary>
     private ProjectDocument? BuildDocumentFromForm()
     {
-        var diameter = ParseNumber(DiameterBox.Text, "قطر اسمی");
-        var pitch = ParseNumber(PitchBox.Text, "گام");
-        var length = ParseNumber(LengthBox.Text, "طول");
-        if (diameter is null || pitch is null || length is null) return null;
+        // پس از کنترل null، مقادیر غیرتهی محلی برای سادگی نوع‌ها استفاده می‌شوند.
+        var diameterOpt = ParseNumber(DiameterBox.Text, "قطر اسمی");
+        var pitchOpt = ParseNumber(PitchBox.Text, "گام");
+        var lengthOpt = ParseNumber(LengthBox.Text, "طول");
+        if (diameterOpt is null || pitchOpt is null || lengthOpt is null) return null;
+
+        var diameter = diameterOpt.Value;
+        var pitch = pitchOpt.Value;
+        var length = lengthOpt.Value;
 
         var handedness = ((ComboBoxItem)HandednessBox.SelectedItem)?.Tag as string == "Left"
             ? ThreadHandedness.Left
@@ -181,11 +188,11 @@ public partial class DesignView : UserControl
         {
             Family = ThreadFamily.IsoMetric,
             Kind = ThreadKind.External,
-            NominalDiameterMm = diameter.Value,
-            PitchMm = pitch.Value,
-            Starts = Math.Max(1, starts.Value),
+            NominalDiameterMm = diameter,
+            PitchMm = pitch,
+            Starts = Math.Max(1, starts),
             Handedness = handedness,
-            ThreadLengthMm = threadRunout ?? length.Value,
+            ThreadLengthMm = threadRunout ?? length,
             ModelingMode = modeling,
             HalfAngleDegrees = 30,
             StandardId = catalogEntry is null ? null : $"CAT-{catalogEntry.SizeLabel}-{catalogEntry.Series}",
@@ -202,15 +209,15 @@ public partial class DesignView : UserControl
             {
                 "Bolt" => new ProjectDocument
                 {
-                    ProjectName = $"پیچ {catalogEntry?.SizeLabel ?? diameter.Value.ToString("0.#")}×{length.Value:0.#}",
+                    ProjectName = $"پیچ {catalogEntry?.SizeLabel ?? diameter.ToString("0.#")}×{length:0.#}",
                     Kind = PartKind.Bolt,
                     Bolt = new BoltSpec
                     {
                         Head = head,
                         Drive = drive,
                         Thread = thread,
-                        LengthUnderHeadMm = length.Value,
-                        HeadHeightMm = headHeight.Value,
+                        LengthUnderHeadMm = length,
+                        HeadHeightMm = headHeight,
                         HeadAcrossFlatsMm = head == HeadStyle.Hex ? acrossFlats : null,
                         HeadDiameterMm = head is HeadStyle.SocketCap or HeadStyle.Pan or HeadStyle.FlatCountersunk ? headDiameter : null,
                         SlotWidthMm = drive is DriveStyle.Slot or DriveStyle.Phillips ? slotWidth : null,
@@ -223,13 +230,13 @@ public partial class DesignView : UserControl
                 },
                 "Nut" => new ProjectDocument
                 {
-                    ProjectName = $"مهره {catalogEntry?.SizeLabel ?? diameter.Value.ToString("0.#")}",
+                    ProjectName = $"مهره {catalogEntry?.SizeLabel ?? diameter.ToString("0.#")}",
                     Kind = PartKind.Nut,
                     Nut = new NutSpec
                     {
                         Thread = thread with { Kind = ThreadKind.Internal },
-                        AcrossFlatsMm = acrossFlats.Value,
-                        HeightMm = length.Value,
+                        AcrossFlatsMm = acrossFlats,
+                        HeightMm = length,
                         ChamferMm = Math.Min(0.4, diameter * 0.08),
                     },
                 },
@@ -239,25 +246,25 @@ public partial class DesignView : UserControl
                     Kind = PartKind.Washer,
                     Washer = new WasherSpec
                     {
-                        InnerDiameterMm = diameter.Value * 1.1,
-                        OuterDiameterMm = diameter.Value * 2.0,
-                        ThicknessMm = length.Value > 5 ? 1.6 : Math.Max(length.Value, 0.3),
+                        InnerDiameterMm = diameter * 1.1,
+                        OuterDiameterMm = diameter * 2.0,
+                        ThicknessMm = length > 5 ? 1.6 : Math.Max(length, 0.3),
                     },
                 },
                 "ThreadedRod" => new ProjectDocument
                 {
-                    ProjectName = $"میل رزوه‌دار {catalogEntry?.SizeLabel ?? diameter.Value.ToString("0.#")}",
+                    ProjectName = $"میل رزوه‌دار {catalogEntry?.SizeLabel ?? diameter.ToString("0.#")}",
                     Kind = PartKind.ThreadedRod,
                     ThreadedRod = new ThreadedRodSpec
                     {
                         Thread = thread,
-                        TotalLengthMm = length.Value,
+                        TotalLengthMm = length,
                         EndChamferMm = pitch * 0.5,
                     },
                 },
                 "Assembly" => new ProjectDocument
                 {
-                    ProjectName = $"مجموعه {catalogEntry?.SizeLabel ?? diameter.Value.ToString("0.#")}",
+                    ProjectName = $"مجموعه {catalogEntry?.SizeLabel ?? diameter.ToString("0.#")}",
                     Kind = PartKind.Assembly,
                     Assembly = new AssemblySpec
                     {
@@ -266,8 +273,8 @@ public partial class DesignView : UserControl
                             Head = head,
                             Drive = drive,
                             Thread = thread,
-                            LengthUnderHeadMm = length.Value,
-                            HeadHeightMm = headHeight.Value,
+                            LengthUnderHeadMm = length,
+                            HeadHeightMm = headHeight,
                             HeadAcrossFlatsMm = head == HeadStyle.Hex ? acrossFlats : null,
                             HeadDiameterMm = head is HeadStyle.SocketCap or HeadStyle.Pan or HeadStyle.FlatCountersunk ? headDiameter : null,
                             TipChamferMm = pitch * 0.6,
@@ -275,14 +282,14 @@ public partial class DesignView : UserControl
                         Nut = new NutSpec
                         {
                             Thread = thread with { Kind = ThreadKind.Internal },
-                            AcrossFlatsMm = acrossFlats.Value,
-                            HeightMm = diameter.Value * 0.8,
-                            ChamferMm = Math.Min(0.4, diameter.Value * 0.08),
+                            AcrossFlatsMm = acrossFlats,
+                            HeightMm = diameter * 0.8,
+                            ChamferMm = Math.Min(0.4, diameter * 0.08),
                         },
                         Washer = new WasherSpec
                         {
-                            InnerDiameterMm = diameter.Value * 1.1,
-                            OuterDiameterMm = diameter.Value * 2.0,
+                            InnerDiameterMm = diameter * 1.1,
+                            OuterDiameterMm = diameter * 2.0,
                             ThicknessMm = 1.0,
                         },
                         DisplayGapMm = 1.0,

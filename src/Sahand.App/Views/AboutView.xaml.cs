@@ -56,7 +56,7 @@ public partial class AboutView : UserControl
         // نرم‌افزار ایمیل باز نمی‌شود؛ نشانی انتخاب می‌شود تا کاربر خودش تصمیم بگیرد.
         try
         {
-            EmailText.SelectAll();
+            try { Clipboard.SetDataObject(EmailText.Text, copy: true); } catch { /* کلیپ‌بورد موقتاً در دسترس نیست. */ }
             CardHintText.Text = "نشانی ایمیل انتخاب شد؛ با Ctrl+C کپی کنید.";
         }
         catch (Exception)
