@@ -1,0 +1,27 @@
+<Project>
+  <!--
+    تنظیمات مشترک build برای تمام پروژه‌های راه‌حل.
+    دلیل: یکسان‌سازی نسخهٔ زبان، سطح بهینه‌سازی و هشدارها؛ تغییر این مقادیر باید آگاهانه انجام شود.
+  -->
+  <PropertyGroup>
+    <TargetFrameworkVersion>net8.0</TargetFrameworkVersion>
+    <LangVersion>12</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <!-- هشدارها به‌عنوان خطا: کیفیت کد نباید با خاموش‌کردن قواعد پنهان شود (سند ۷) -->
+    <TreatWarningsAsErrors Condition="'$(CI)' == 'true'">true</TreatWarningsAsErrors>
+    <WarningsAsErrors>nullable</WarningsAsErrors>
+    <InvariantGlobalization>false</InvariantGlobalization>
+    <!-- تولید فایل XML docs برای API عمومی، الزام سند کیفیت کد -->
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
+  </PropertyGroup>
+
+  <!--
+    پروژهٔ WPF روی Linux با این پرچم ساخته می‌شود؛ اجرای آن فقط روی Windows معنا دارد.
+    الزام: هیچ ادعای آزمون اجرایی WPF روی Linux مطرح نمی‌شود.
+  -->
+  <PropertyGroup Condition="'$(EnableWindowsTargeting)' == ''">
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+  </PropertyGroup>
+</Project>

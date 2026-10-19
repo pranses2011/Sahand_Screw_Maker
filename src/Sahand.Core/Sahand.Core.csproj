@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    لایهٔ دامنهٔ محصول: مدل پارامتریک، رزوه، واحد، اعتبارسنجی، پروژهٔ بومی و کاتالوگ.
+    قید مهم: این لایه نباید به Windows یا هیچ UI وابسته باشد تا روی Linux هم آزمون‌پذیر بماند.
+  -->
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>Sahand.Core</RootNamespace>
+    <AssemblyName>Sahand.Core</AssemblyName>
+    <Description>لایهٔ دامنهٔ «طراح پیچ و مهره سهند» — مستقل از UI و سیستم‌عامل</Description>
+  </PropertyGroup>
+
+</Project>

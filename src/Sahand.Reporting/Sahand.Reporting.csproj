@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    لایهٔ گزارش/بازخورد: صف محلی، پاک‌سازی داده و ارسال SMTP امن با TLS.
+    قید: ارسال فقط با رضایت کاربر + پیکربندی + شبکه؛ هستهٔ برنامه آفلاین می‌ماند (سند ۵).
+  -->
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>Sahand.Reporting</RootNamespace>
+    <AssemblyName>Sahand.Reporting</AssemblyName>
+    <Description>گزارش و بازخورد «طراح پیچ و مهره سهند»</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Sahand.Core\Sahand.Core.csproj" />
+  </ItemGroup>
+
+  <!-- دسترسی آزمون‌های واحد به دریچه‌های internal (تنها برای تست — سند ۶-۱). -->
+  <ItemGroup>
+    <InternalsVisibleTo Include="Sahand.Reporting.Tests" />
+  </ItemGroup>
+
+</Project>

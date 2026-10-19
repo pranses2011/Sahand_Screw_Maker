@@ -1,0 +1,160 @@
+<UserControl x:Class="Sahand.App.Views.DesignView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <!--
+        فرم طراحی قطعه — گروه‌بندی فیلدها مطابق سند ۲-۴: ابعاد اصلی، رزوه، سر و محرک، تلرانس.
+        فیلد عددی LTR ایزوله است تا رقم/واحد جابه‌جا نشود (سند ۲-۱).
+    -->
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="10" MaxWidth="720" HorizontalAlignment="Right">
+            <TextBlock Text="طراحی قطعه" FontSize="{StaticResource FontSize.Header}" FontWeight="Bold" Margin="0,0,0,10"/>
+
+            <!-- نوع قطعه -->
+            <GroupBox Header="نوع قطعه" Margin="0,0,0,10">
+                <StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,4">
+                        <TextBlock Text="نوع:" Width="110" VerticalAlignment="Center"/>
+                        <ComboBox x:Name="PartKindBox" Width="180" SelectionChanged="OnPartKindChanged">
+                            <ComboBoxItem Content="پیچ/بولت" Tag="Bolt" IsSelected="True"/>
+                            <ComboBoxItem Content="مهره" Tag="Nut"/>
+                            <ComboBoxItem Content="واشر تخت" Tag="Washer"/>
+                            <ComboBoxItem Content="میل رزوه‌دار" Tag="ThreadedRod"/>
+                            <ComboBoxItem Content="مجموعهٔ پیچ + مهره" Tag="Assembly"/>
+                        </ComboBox>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,4">
+                        <TextBlock Text="اندازهٔ کاتالوگ:" Width="110" VerticalAlignment="Center"
+                                   ToolTip="دادهٔ کاتالوگ با یادداشت منبع؛ «سفارشی» برای ورود آزاد ابعاد"/>
+                        <ComboBox x:Name="SizeBox" Width="180" SelectionChanged="OnSizeChanged"/>
+                        <TextBlock x:Name="SourceNoteText" Text="" Foreground="{StaticResource Brush.TextSecondary}"
+                                   FontSize="{StaticResource FontSize.Small}" Margin="10,0,0,0"
+                                   VerticalAlignment="Center" TextWrapping="Wrap"/>
+                    </StackPanel>
+                </StackPanel>
+            </GroupBox>
+
+            <!-- ابعاد اصلی -->
+            <GroupBox Header="ابعاد اصلی (میلی‌متر)" Margin="0,0,0,10">
+                <StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,4">
+                        <TextBlock Text="طول مؤثر (L):" Width="150" VerticalAlignment="Center"/>
+                        <TextBox x:Name="LengthBox" Width="110" FlowDirection="LeftToRight" Text="20"
+                                 ToolTip="پیچ/میل: طول ساق زیر سر؛ مهره: ارتفاع"/>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,4">
+                        <TextBlock Text="قطر اسمی (d):" Width="150" VerticalAlignment="Center"/>
+                        <TextBox x:Name="DiameterBox" Width="110" FlowDirection="LeftToRight" Text="6"/>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,4">
+                        <TextBlock Text="گام رزوه (P):" Width="150" VerticalAlignment="Center"
+                                   ToolTip="فاصلهٔ محوری دو دندانهٔ مجاور — با پیشروی (lead) اشتباه نشود"/>
+                        <TextBox x:Name="PitchBox" Width="110" FlowDirection="LeftToRight" Text="1"/>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,4">
+                        <TextBlock Text="طول رزوه از نوک:" Width="150" VerticalAlignment="Center"
+                                   ToolTip="خالی = تمام‌رزوه"/>
+                        <TextBox x:Name="ThreadRunoutBox" Width="110" FlowDirection="LeftToRight" Text=""/>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,4">
+                        <TextBlock Text="عرض آچارخور:" Width="150" VerticalAlignment="Center"
+                                   ToolTip="پیچ شش‌گوش/مهره: فاصلهٔ بین دو تخت مقابل"/>
+                        <TextBox x:Name="AcrossFlatsBox" Width="110" FlowDirection="LeftToRight" Text="9.3"/>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,4">
+                        <TextBlock Text="ارتفاع سر:" Width="150" VerticalAlignment="Center"/>
+                        <TextBox x:Name="HeadHeightBox" Width="110" FlowDirection="LeftToRight" Text="3.9"/>
+                    </StackPanel>
+                </StackPanel>
+            </GroupBox>
+
+            <!-- سر و محرک (فقط پیچ) -->
+            <GroupBox x:Name="HeadGroup" Header="سر و محرک" Margin="0,0,0,10">
+                <StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,4">
+                        <TextBlock Text="نوع سر:" Width="150" VerticalAlignment="Center"/>
+                        <ComboBox x:Name="HeadBox" Width="180">
+                            <ComboBoxItem Content="شش‌گوش" Tag="Hex" IsSelected="True"/>
+                            <ComboBoxItem Content="استوانه‌ای آلن" Tag="SocketCap"/>
+                            <ComboBoxItem Content="خزینه (مخروطی)" Tag="FlatCountersunk"/>
+                            <ComboBoxItem Content="نیم‌گرد" Tag="Pan"/>
+                        </ComboBox>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,4">
+                        <TextBlock Text="محرک:" Width="150" VerticalAlignment="Center"/>
+                        <ComboBox x:Name="DriveBox" Width="180">
+                            <ComboBoxItem Content="بدون محرک" Tag="None" IsSelected="True"/>
+                            <ComboBoxItem Content="حفرهٔ آلن" Tag="HexSocket"/>
+                            <ComboBoxItem Content="شیار تخت" Tag="Slot"/>
+                            <ComboBoxItem Content="شیار صلیبی (بر پایهٔ فرم فیلیپس)" Tag="Phillips"/>
+                        </ComboBox>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,4">
+                        <TextBlock Text="قطر سر (دایره‌ای):" Width="150" VerticalAlignment="Center"/>
+                        <TextBox x:Name="HeadDiameterBox" Width="110" FlowDirection="LeftToRight" Text="9.3"/>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,4">
+                        <TextBlock Text="پهنای شیار:" Width="150" VerticalAlignment="Center"/>
+                        <TextBox x:Name="SlotWidthBox" Width="110" FlowDirection="LeftToRight" Text="1.1"/>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,4">
+                        <TextBlock Text="عمق شیار:" Width="150" VerticalAlignment="Center"/>
+                        <TextBox x:Name="SlotDepthBox" Width="110" FlowDirection="LeftToRight" Text="0.9"/>
+                    </StackPanel>
+                </StackPanel>
+            </GroupBox>
+
+            <!-- رزوه -->
+            <GroupBox Header="رزوه" Margin="0,0,0,10">
+                <StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,4">
+                        <TextBlock Text="جهت:" Width="150" VerticalAlignment="Center"/>
+                        <ComboBox x:Name="HandednessBox" Width="180">
+                            <ComboBoxItem Content="راست‌گرد" Tag="Right" IsSelected="True"/>
+                            <ComboBoxItem Content="چپ‌گرد" Tag="Left"/>
+                        </ComboBox>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,4">
+                        <TextBlock Text="تعداد شروع‌ها:" Width="150" VerticalAlignment="Center"
+                                   ToolTip="پیشروی (lead) = گام × تعداد شروع‌ها"/>
+                        <TextBox x:Name="StartsBox" Width="110" FlowDirection="LeftToRight" Text="1"/>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,4">
+                        <TextBlock Text="حالت مدل‌سازی:" Width="150" VerticalAlignment="Center"
+                                   ToolTip="رزوهٔ واقعی: هندسهٔ مارپیچ کامل (سنگین‌تر) — نمایشی: بدنهٔ صاف با برچسب صریح"/>
+                        <ComboBox x:Name="ModelingModeBox" Width="180">
+                            <ComboBoxItem Content="رزوهٔ واقعی مارپیچ" Tag="RealHelical" IsSelected="True"/>
+                            <ComboBoxItem Content="نمایشی (بدون رزوهٔ واقعی)" Tag="Simplified"/>
+                        </ComboBox>
+                    </StackPanel>
+                </StackPanel>
+            </GroupBox>
+
+            <!-- دکمه‌ها -->
+            <StackPanel Orientation="Horizontal" Margin="0,6,0,10">
+                <Button x:Name="BuildButton" Content="ساخت/به‌روزرسانی مدل" MinWidth="160" Click="OnBuildClick"/>
+                <Button Content="بازگردانی پیش‌فرض‌ها" Style="{StaticResource SecondaryButton}"
+                        Margin="10,0,0,0" MinWidth="130" Click="OnResetClick"/>
+            </StackPanel>
+
+            <!-- وضعیت اعتبارسنجی و خلاصه -->
+            <Border Background="{StaticResource Brush.AccentSoft}" CornerRadius="6" Padding="10" Margin="0,0,0,8">
+                <StackPanel>
+                    <TextBlock x:Name="ValidationSummaryText" Text="وضعیت: آماده" FontWeight="Bold"/>
+                    <TextBlock x:Name="MeshStatsText" Text=""
+                               Foreground="{StaticResource Brush.TextSecondary}"
+                               FontSize="{StaticResource FontSize.Small}" TextWrapping="Wrap"/>
+                </StackPanel>
+            </Border>
+
+            <ItemsControl ItemsSource="{Binding ValidationMessages, RelativeSource={RelativeSource AncestorType=UserControl}}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <TextBlock Text="{Binding}" TextWrapping="Wrap" Margin="0,2"
+                                   Foreground="{StaticResource Brush.Error}"
+                                   FontSize="{StaticResource FontSize.Small}"/>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

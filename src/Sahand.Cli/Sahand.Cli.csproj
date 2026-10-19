@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    ابزار خط فرمان بدون رابط — تولید/خروجی/اعتبارسنجی headless برای اتوماسیون و CI.
+    روی Windows/Linux اجرا می‌شود؛ هستهٔ مشترک با برنامهٔ روان است.
+  -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>Sahand.Cli</RootNamespace>
+    <AssemblyName>ssnd-cli</AssemblyName>
+    <Description>ابزار خط فرمان «طراح پیچ و مهره سهند»</Description>
+    <InvariantGlobalization>false</InvariantGlobalization>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Sahand.Core\Sahand.Core.csproj" />
+    <ProjectReference Include="..\Sahand.Geometry\Sahand.Geometry.csproj" />
+    <ProjectReference Include="..\Sahand.Exporters\Sahand.Exporters.csproj" />
+  </ItemGroup>
+
+</Project>

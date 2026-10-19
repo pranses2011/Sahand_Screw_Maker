@@ -1,0 +1,34 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    برنامهٔ روان WPF فارسی/راست‌چین «طراح پیچ و مهره سهند».
+    قید: net8.0-windows؛ روی Linux فقط build می‌شود (EnableWindowsTargeting) و اجرا باید روی Windows تأیید شود.
+    فونت وزیرمتن به‌صورت Resource همراه بسته است — هیچ دانلود/نصب فونت در زمان اجرا نیست.
+  -->
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <RootNamespace>Sahand.App</RootNamespace>
+    <AssemblyName>SahandScrewNutDesigner</AssemblyName>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <Version>0.1.0</Version>
+    <Description>طراح پیچ و مهره سهند — Sahand Screw &amp; Nut Designer</Description>
+    <InvariantGlobalization>false</InvariantGlobalization>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Sahand.Core\Sahand.Core.csproj" />
+    <ProjectReference Include="..\Sahand.Geometry\Sahand.Geometry.csproj" />
+    <ProjectReference Include="..\Sahand.Exporters\Sahand.Exporters.csproj" />
+    <ProjectReference Include="..\Sahand.Reporting\Sahand.Reporting.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Fonts\Vazirmatn-Regular.ttf" />
+    <Resource Include="Fonts\Vazirmatn-Medium.ttf" />
+    <Resource Include="Fonts\Vazirmatn-Bold.ttf" />
+    <Resource Include="Fonts\OFL-Vazirmatn.txt" />
+  </ItemGroup>
+
+</Project>
