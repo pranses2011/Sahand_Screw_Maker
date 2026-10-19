@@ -41,11 +41,17 @@ public partial class DesignView : UserControl
 
     private string SelectedKind => ((ComboBoxItem)PartKindBox.SelectedItem)?.Tag as string ?? "Bolt";
 
-    /// <summary>پرکردن فهرست اندازه‌های کاتالوگ متریک با یادداشت منبع.</summary>
+    /// <summary>خانوادهٔ رزوهٔ انتخاب‌شده (متریک/اینچی) — منبع فهرست اندازه‌ها.</summary>
+    private ThreadFamily SelectedFamily => ((ComboBoxItem)FamilyBox.SelectedItem)?.Tag as string == "Unified"
+        ? ThreadFamily.Unified
+        : ThreadFamily.IsoMetric;
+
+    /// <summary>پرکردن فهرست اندازه‌های کاتالوگ خانوادهٔ انتخابی با یادداشت منبع.</summary>
     private void RefreshSizes()
     {
+        if (SizeBox is null) return; // حین InitializeComponent رخداد زودهنگام.
         SizeBox.Items.Clear();
-        foreach (var entry in ThreadCatalog.GetEntries(ThreadFamily.IsoMetric))
+        foreach (var entry in ThreadCatalog.GetEntries(SelectedFamily))
         {
             var item = new ComboBoxItem
             {
@@ -56,6 +62,14 @@ public partial class DesignView : UserControl
         }
 
         if (SizeBox.Items.Count > 0) SizeBox.SelectedIndex = 0;
+    }
+
+    private void OnFamilyChanged(object sender, SelectionChangedEventArgs e)
+    {
+        // آیتم اول FamilyBox در XAML با IsSelected آمده — رخداد زودهنگام در حین
+        // InitializeComponent کنار گذاشته می‌شود؛ پس از Loaded فهرست کامل ساخته می‌شود.
+        if (SizeBox is null) return;
+        RefreshSizes();
     }
 
     private void OnPartKindChanged(object sender, SelectionChangedEventArgs e)
@@ -92,7 +106,8 @@ public partial class DesignView : UserControl
         SourceNoteText.Text = entry.SourceNote;
         var inv = System.Globalization.CultureInfo.InvariantCulture;
         DiameterBox.Text = entry.NominalDiameterMm.ToString("0.###", inv);
-        PitchBox.Text = entry.PitchMm.ToString("0.###", inv);
+        // گام اینچی ریز است (مثل 0.4536) — چهار رقم اعشار برای وفاداری نمایش.
+        PitchBox.Text = entry.PitchMm.ToString("0.####", inv);
         AcrossFlatsBox.Text = (entry.NominalDiameterMm * 1.55).ToString("0.###", inv);
         HeadHeightBox.Text = (entry.NominalDiameterMm * 0.65).ToString("0.###", inv);
         HeadDiameterBox.Text = (entry.NominalDiameterMm * 1.55).ToString("0.###", inv);

@@ -23,6 +23,14 @@
                         </ComboBox>
                     </StackPanel>
                     <StackPanel Orientation="Horizontal" Margin="0,4">
+                        <TextBlock Text="خانوادهٔ رزوه:" Width="110" VerticalAlignment="Center"
+                                   ToolTip="متریک (ISO 261) یا اینچی UNC (ASME B1.1) — یادداشت منبع کنار اندازهٔ کاتالوگ نمایش داده می‌شود"/>
+                        <ComboBox x:Name="FamilyBox" Width="180" SelectionChanged="OnFamilyChanged">
+                            <ComboBoxItem Content="متریک ISO" Tag="IsoMetric" IsSelected="True"/>
+                            <ComboBoxItem Content="اینچی UNC" Tag="Unified"/>
+                        </ComboBox>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,4">
                         <TextBlock Text="اندازهٔ کاتالوگ:" Width="110" VerticalAlignment="Center"
                                    ToolTip="دادهٔ کاتالوگ با یادداشت منبع؛ «سفارشی» برای ورود آزاد ابعاد"/>
                         <ComboBox x:Name="SizeBox" Width="180" SelectionChanged="OnSizeChanged"/>
