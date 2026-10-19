@@ -223,7 +223,7 @@ public partial class DesignView : UserControl
 
         var thread = new ThreadSpec
         {
-            Family = ThreadFamily.IsoMetric,
+            Family = SelectedFamily,
             Kind = ThreadKind.External,
             NominalDiameterMm = diameter,
             PitchMm = pitch,
