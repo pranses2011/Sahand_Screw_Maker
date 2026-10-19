@@ -172,7 +172,8 @@ public static class ThreadedSurface
     /// <param name="mouthChamferMm">پخ دهانهٔ دو سر حفره.</param>
     /// <param name="grid">شبکهٔ زاویه‌ای مشترک.</param>
     /// <param name="zStepMm">گام z.</param>
-    public static void AddInternalCavity(
+    /// <returns>حلقه‌های رأس هر تراز z (برای درپوش‌های سطحی مهره).</returns>
+    public static int[][] AddInternalCavity(
         MeshBuilder mesh,
         ThreadSpec spec,
         RadialProfileFunction profile,
@@ -210,7 +211,7 @@ public static class ThreadedSurface
         var zLevels = BuildZLevels(zBottomMm, zTopMm, zStepMm,
             [zBottomMm + mouthChamferMm, zTopMm - mouthChamferMm]);
 
-        RadialSurface.AddInwardSurface(mesh, grid, RadiusAt, zLevels);
+        return RadialSurface.AddInwardSurface(mesh, grid, RadiusAt, zLevels);
     }
 
     /// <summary>
