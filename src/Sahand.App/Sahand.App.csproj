@@ -32,4 +32,9 @@
     <Resource Include="Fonts\OFL-Vazirmatn.txt" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- آیکون رسمی برنامه — فایل اصلی کارفرما (docs/assets/ScrewIcon.png). -->
+    <Resource Include="Resources\ScrewIcon.png" />
+  </ItemGroup>
+
 </Project>
