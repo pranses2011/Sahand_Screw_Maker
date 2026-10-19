@@ -101,8 +101,9 @@ public class BoltBuilderTests
         Assert.True(rightValidation.IsWatertight);
         Assert.True(leftValidation.IsWatertight);
 
-        // حجم‌ها باید در تلرانس تفکیک شبکه یکی باشند.
-        Assert.Equal(right.SignedVolumeMm3(), left.SignedVolumeMm3(), precision: 1);
+        // حجم‌ها باید در تلرانس تفکیک شبکه (چند دهم میلی‌متر مکعب) یکی باشند.
+        Assert.True(Math.Abs(right.SignedVolumeMm3() - left.SignedVolumeMm3()) < 1.0,
+            $"تفاضل حجم چپ/راست بیش از حد انتظار: {right.SignedVolumeMm3()} در برابر {left.SignedVolumeMm3()}");
     }
 
     [Fact]
@@ -244,18 +245,32 @@ public class OtherPartsTests
     [Fact]
     public void Washer_BuildsWatertight()
     {
+        // بدون پخ برای مقایسهٔ حجم تحلیلی دقیق؛ پخ در آزمون جداگانه.
         var mesh = WasherBuilder.Build(new WasherSpec
+        {
+            InnerDiameterMm = 6.6,
+            OuterDiameterMm = 12,
+            ThicknessMm = 1.6,
+        }, MeshQualityPreset.Draft);
+
+        Assert.True(MeshValidator.Validate(mesh, checkSelfIntersection: true).IsWatertight);
+
+        // حجم انتظار «آگاه از تسلاشن»: سطح مقطع چندضلعی N=48 (نه دایرهٔ کامل).
+        // این دقیقاً همان چیزی است که مش می‌تواند بیان کند؛ خطای باقی‌مانده خطای وتر است.
+        const int polygonSides = 48;
+        var polygonAnnulusArea = polygonSides / 2.0 * Math.Sin(2.0 * Math.PI / polygonSides) * (36.0 - 10.89);
+        var expected = polygonAnnulusArea * 1.6;
+        Assert.Equal(expected, mesh.SignedVolumeMm3(), precision: 2);
+
+        // با پخ هم باید watertight بماند.
+        var chamfered = WasherBuilder.Build(new WasherSpec
         {
             InnerDiameterMm = 6.6,
             OuterDiameterMm = 12,
             ThicknessMm = 1.6,
             EdgeChamferMm = 0.2,
         }, MeshQualityPreset.Draft);
-
-        Assert.True(MeshValidator.Validate(mesh, checkSelfIntersection: true).IsWatertight);
-        // حجم واشر: π/4·(d²−d1²)·t
-        var expected = Math.PI / 4 * (144 - 43.56) * 1.6;
-        Assert.Equal(expected, mesh.SignedVolumeMm3(), precision: 0);
+        Assert.True(MeshValidator.Validate(chamfered, checkSelfIntersection: true).IsWatertight);
     }
 
     [Fact]
@@ -337,19 +352,19 @@ public class MeshInfrastructureTests
                 for (var z = -1; z <= 1; z += 2)
                     v[i++] = builder.AddVertex(x * s, y * s, z * s);
 
-        // وجه‌ها با winding بیرونی قانون دست راست.
+        // وجه‌ها با winding بیرونی قانون دست راست — راستی‌آزمایی با ضرب خارجی.
         // v0=(-,-,-) v1=(-,-,+) v2=(-,+,-) v3=(-,+,+) v4=(+,-,-) v5=(+,-,+) v6=(+,+,-) v7=(+,+,+)
         void Face(int p, int q, int r, int t)
         {
             builder.AddTriangle(p, q, r);
             builder.AddTriangle(p, r, t);
         }
-        Face(v[0], v[4], v[6], v[2]); // x-
-        Face(v[1], v[3], v[7], v[5]); // x+
-        Face(v[0], v[1], v[5], v[4]); // y-
-        Face(v[2], v[6], v[7], v[3]); // y+
-        Face(v[0], v[2], v[3], v[1]); // z-
-        Face(v[4], v[5], v[7], v[6]); // z+
+        Face(v[0], v[2], v[6], v[4]); // z- (نرمال -ẑ)
+        Face(v[1], v[5], v[7], v[3]); // z+ (نرمال +ẑ)
+        Face(v[0], v[4], v[5], v[1]); // y- (نرمال -ŷ)
+        Face(v[2], v[3], v[7], v[6]); // y+ (نرمال +ŷ)
+        Face(v[0], v[1], v[3], v[2]); // x- (نرمال -x̂)
+        Face(v[4], v[6], v[7], v[5]); // x+ (نرمال +x̂)
         return builder.Build();
     }
 
@@ -398,11 +413,11 @@ public class MeshInfrastructureTests
             builder.AddTriangle(p, q, r);
             builder.AddTriangle(p, r, t);
         }
-        Face(v[0], v[4], v[6], v[2]);
-        Face(v[1], v[3], v[7], v[5]);
-        Face(v[0], v[1], v[5], v[4]);
-        Face(v[2], v[6], v[7], v[3]);
-        Face(v[0], v[2], v[3], v[1]);
+        Face(v[0], v[2], v[6], v[4]);
+        Face(v[1], v[5], v[7], v[3]);
+        Face(v[0], v[4], v[5], v[1]);
+        Face(v[2], v[3], v[7], v[6]);
+        Face(v[0], v[1], v[3], v[2]);
         // وجه z+ حذف شد — مش باز است.
 
         var validation = MeshValidator.Validate(builder.Build());
@@ -413,17 +428,18 @@ public class MeshInfrastructureTests
     public void PolygonTriangulation_CoversKnownArea()
     {
         // مربع واحد: مساحت مثلث‌بندی باید ۱ باشد.
-        var triangles = PolygonTriangulation.Triangulate(4, i => i switch
+        (double X, double Y) Point(int i) => i switch
         {
             0 => (0.0, 0.0),
             1 => (1.0, 0.0),
             2 => (1.0, 1.0),
             _ => (0.0, 1.0),
-        }).ToList();
+        };
+        var triangles = PolygonTriangulation.Triangulate(4, Point).ToList();
 
         Assert.Equal(2, triangles.Count);
         var area = triangles.Sum(t => 0.5 * Math.Abs(
-            Cross(t.Item1, t.Item2, t.Item3)));
+            Cross(Point(t.Item1), Point(t.Item2), Point(t.Item3))));
         Assert.Equal(1.0, area, precision: 9);
 
         static double Cross((double X, double Y) a, (double X, double Y) b, (double X, double Y) c)

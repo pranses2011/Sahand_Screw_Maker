@@ -1,3 +1,6 @@
+using System.Text;
+using System.Net;
+using System.Net.Sockets;
 using Sahand.Reporting;
 using Sahand.Reporting.Smtp;
 using Xunit;
@@ -85,7 +88,7 @@ public class ReportQueueTests : IDisposable
 
         Assert.True(queue.Remove(report.Id));
         Assert.Empty(queue.Reports);
-        Assert.False(new ReportQueue(QueuePath).Reports.Any(r => r.Id == report.Id));
+        Assert.DoesNotContain(new ReportQueue(QueuePath).Reports, r => r.Id == report.Id);
     }
 
     [Fact]
@@ -250,7 +253,7 @@ public sealed class FakeSmtpServer : IDisposable
                     await writer.WriteLineAsync("250 OK: queued");
                     continue;
                 }
-                mailBody.AppendLine(line);
+                mailBody.Append(line).Append("\r\n");
                 continue;
             }
 
@@ -325,7 +328,15 @@ public class RawSmtpClientTests : IDisposable
 
         Assert.True(result.Success, result.PersianError ?? "باید موفق باشد");
         Assert.Single(server.ReceivedMail);
-        Assert.Contains("آزمون موضوع فارسی", server.ReceivedMail[0]); // موضوع encoded-word شده.
+
+        // موضوع به‌صورت encoded-word (=?UTF-8?B?...?=) فرستاده می‌شود؛ رمزگشایی و مقایسه.
+        var mail = server.ReceivedMail[0];
+        var subjectLine = mail.Split("\r\n").FirstOrDefault(l => l.StartsWith("Subject:")) ?? "";
+        Assert.Contains("=?UTF-8?B?", subjectLine);
+        var match = System.Text.RegularExpressions.Regex.Match(subjectLine, @"=\?UTF-8\?B\?([^?]+)\?=");
+        Assert.True(match.Success, "الگوی encoded-word پیدا نشد.");
+        var decodedSubject = System.Text.Encoding.UTF8.GetString(Convert.FromBase64String(match.Groups[1].Value));
+        Assert.Equal("آزمون موضوع فارسی", decodedSubject);
     }
 
     [Fact]
@@ -347,7 +358,7 @@ public class RawSmtpClientTests : IDisposable
 
         Assert.False(result.Success);
         Assert.NotNull(result.PersianError);
-        Assert.Contains(result.PersianError!, p => p.Contains("اتصال") || p.Contains("مهلت"));
+        Assert.Contains("اتصال", result.PersianError!);
     }
 
     [Fact]
@@ -363,7 +374,7 @@ public class RawSmtpClientTests : IDisposable
             body: "b");
 
         Assert.False(result.Success);
-        Assert.Contains("پیکربندی", result.PersianError);
+        Assert.Contains("تنظیمات", result.PersianError);
     }
 
     [Fact]

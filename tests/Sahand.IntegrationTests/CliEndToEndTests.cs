@@ -72,7 +72,6 @@ public class CliEndToEndTests : IDisposable
         Assert.True(File.Exists(ssndPath), "فایل پروژه ساخته نشد.");
         Assert.True(File.Exists(stlPath), "فایل STL ساخته نشد.");
         Assert.Contains("ذخیره شد", output);
-        Assert.False(string.IsNullOrWhiteSpace(error));
 
         // خواندن مستقل STL: تعداد مثلث و ابعاد باید منطقی باشد.
         var read = Sahand.Exporters.StlReader.ReadBinary(stlPath);

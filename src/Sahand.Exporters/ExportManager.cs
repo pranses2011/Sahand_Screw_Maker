@@ -60,7 +60,7 @@ public sealed class ExportManager
 
         if (!ExportCapabilityMatrix.IsExportable(options.FormatKey))
             throw new InvalidOperationException(
-                $"فرمت {info.PersianName} فعال نیست: {info.StatusReason}");
+                $"فرمت {info.PersianName} فعال نیست (وضعیت: {StatusLabel(info.Status)}) — {info.StatusReason}");
 
         if (File.Exists(filePath))
             throw new InvalidOperationException(
@@ -154,5 +154,15 @@ public sealed class ExportManager
         LengthUnit.Millimeter => "میلی‌متر",
         LengthUnit.Inch => "اینچ",
         _ => "?",
+    };
+
+    /// <summary>برچسب فارسی وضعیت — در پیام‌های رد فرمت استفاده می‌شود.</summary>
+    private static string StatusLabel(ExportCapabilityStatus status) => status switch
+    {
+        ExportCapabilityStatus.Supported => "پشتیبانی‌شده",
+        ExportCapabilityStatus.Limited => "محدود",
+        ExportCapabilityStatus.Planned => "در برنامهٔ توسعه",
+        ExportCapabilityStatus.RequiresLicense => "وابسته به مجوز",
+        _ => "—",
     };
 }

@@ -52,7 +52,7 @@ public class UnitSystemTests
     }
 
     [Theory]
-    [InlineData("0/4")]
+    [InlineData("1/2/3")]
     [InlineData("1/")]
     [InlineData("abc")]
     public void FractionInch_InvalidInput_Throws(string input)

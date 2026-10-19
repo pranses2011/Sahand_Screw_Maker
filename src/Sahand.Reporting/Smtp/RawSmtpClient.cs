@@ -68,6 +68,19 @@ public sealed class RawSmtpClient
         if (!MailAddressValidator.IsValid(to))
             return new SmtpResult(false, $"نشانی مقصد «{to}» معتبر نیست.", "bad-recipient");
 
+        // اعتبارسنجی ضمیمه «پیش از اتصال» — خطای کاربر نباید منتظر شبکه بماند (سند ۵-۶).
+        if (attachmentPath is not null)
+        {
+            var ext = Path.GetExtension(attachmentPath).ToLowerInvariant();
+            if (ext is not (".ssnd" or ".txt" or ".log" or ".stl" or ".png"))
+                return new SmtpResult(false, $"نوع ضمیمه «{ext}» مجاز نیست؛ فقط ssnd/txt/log/stl/png.", "bad-attachment");
+
+            var info = new FileInfo(attachmentPath);
+            if (info.Length > MaxAttachmentBytes)
+                return new SmtpResult(false,
+                    $"اندازهٔ ضمیمه از سقف {MaxAttachmentBytes / 1024} کیلوبایت بیشتر است.", "attachment-too-large");
+        }
+
         var log = new StringBuilder();
 
         try
@@ -321,11 +334,15 @@ public sealed class RawSmtpClient
 
     private static bool IsCompleteReply(StringBuilder text)
     {
-        // پاسخ SMTP کامل: خط آخر «NNN<SP>» (خطوط میانی «NNN-»).
+        // پاسخ SMTP کامل: خط آخر «NNN» تنها (مثل چالش 334 بدون متن) یا «NNN<SP>…».
+        // خطوط میانی «NNN-…» هستند و ادامه دارند.
         var value = text.ToString();
         if (!value.EndsWith("\r\n")) return false;
         var lines = value.Split("\r\n", StringSplitOptions.RemoveEmptyEntries);
-        return lines.Length > 0 && lines[^1].Length >= 4 && lines[^1][3] == ' ';
+        if (lines.Length == 0) return false;
+
+        var last = lines[^1];
+        return last.Length == 3 || (last.Length > 3 && last[3] == ' ');
     }
 
     private async Task<Reply> CommandAsync(Stream stream, string command, CancellationToken token)
