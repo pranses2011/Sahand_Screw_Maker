@@ -1,5 +1,4 @@
 using Sahand.Core.Catalog;
-using Sahand.Core.Catalog;
 using Sahand.Core.Parts;
 using Sahand.Core.Printing;
 using Sahand.Core.Project;
@@ -26,17 +25,22 @@ public static class Commands
     {
         var kind = args.GetValueOrDefault("--part", "bolt").ToLowerInvariant();
 
-        var document = kind switch
+        ProjectDocument? document = kind switch
         {
             "bolt" => BuildBoltDocument(args),
             "nut" => BuildNutDocument(args),
             "washer" => BuildWasherDocument(args),
             "rod" => BuildRodDocument(args),
             "assembly" => BuildAssemblyDocument(args),
-            _ => Fail($"نوع قطعهٔ ناشناخته: «{kind}» (گزینه‌ها: bolt/nut/washer/rod/assembly)"),
+            _ => null,
         };
 
-        if (document is null) return 1;
+        if (document is null)
+        {
+            if (kind is not ("bolt" or "nut" or "washer" or "rod" or "assembly"))
+                Fail($"نوع قطعهٔ ناشناخته: «{kind}» (گزینه‌ها: bolt/nut/washer/rod/assembly)");
+            return 1;
+        }
 
         // اعتبارسنجی پیش از ذخیره — همان مسیر UI.
         var validation = ValidateDocument(document);
@@ -69,7 +73,7 @@ public static class Commands
             var result = exporter.ExportMesh(mesh, meshPath, new ExportOptions
             {
                 FormatKey = format,
-                Quality = ParseQuality(args),
+                Quality = ToExportQuality(ParseQuality(args)),
                 PartName = document.ProjectName,
                 AsciiStl = args.ContainsKey("--ascii"),
             }, FirstThread(document));
@@ -109,7 +113,7 @@ public static class Commands
             var result = exporter.ExportMesh(mesh, outPath, new ExportOptions
             {
                 FormatKey = format,
-                Quality = ParseQuality(args),
+                Quality = ToExportQuality(ParseQuality(args)),
                 PartName = document.ProjectName,
                 AsciiStl = args.ContainsKey("--ascii"),
             }, FirstThread(document));
@@ -222,7 +226,7 @@ public static class Commands
             var result = exporter.ExportMesh(mesh, meshPath, new ExportOptions
             {
                 FormatKey = format,
-                Quality = ParseQuality(args),
+                Quality = ToExportQuality(ParseQuality(args)),
                 PartName = rod.Name,
             }, rod.Thread);
             Console.WriteLine($"کوپن {result.Format}: {result.FileBytes} بایت → {result.FilePath}");
@@ -391,6 +395,15 @@ public static class Commands
             "veryfine" or "very-fine" => MeshQualityPreset.VeryFine,
             _ => MeshQualityPreset.Balanced,
         };
+
+    /// <summary>نگاشت preset کیفیت مش به preset خروجی — نام‌ها یکسان‌اند اما enumهای جداست.</summary>
+    private static ExportQualityPreset ToExportQuality(MeshQualityPreset preset) => preset switch
+    {
+        MeshQualityPreset.Draft => ExportQualityPreset.Draft,
+        MeshQualityPreset.Fine => ExportQualityPreset.Fine,
+        MeshQualityPreset.VeryFine => ExportQualityPreset.VeryFine,
+        _ => ExportQualityPreset.Balanced,
+    };
 
     private static double ParseDouble(Dictionary<string, string> args, string key, double fallback)
     {
