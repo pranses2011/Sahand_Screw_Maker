@@ -130,7 +130,7 @@ public static class PlyExporter
         var clean = hex?.TrimStart('#');
         if (clean is { Length: 6 } && uint.TryParse(clean, System.Globalization.NumberStyles.HexNumber, null, out var rgb))
         {
-            return (byte)((rgb >> 16) & 0xFF), (byte)((rgb >> 8) & 0xFF), (byte)(rgb & 0xFF);
+            return ((byte)((rgb >> 16) & 0xFF), (byte)((rgb >> 8) & 0xFF), (byte)(rgb & 0xFF));
         }
         return (0xB8, 0xBC, 0xC2);
     }

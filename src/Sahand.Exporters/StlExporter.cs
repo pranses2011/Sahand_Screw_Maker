@@ -45,7 +45,7 @@ public static class StlExporter
         // سربرگ ۸۰ بایتی: شناسه برنامه + واحد (اطلاعاتی؛ STL واحد استاندارد ندارد).
         var headerText = $"Sahand Screw & Nut Designer - unit:{options.TargetUnit} - {options.PartName}";
         var header = new byte[80];
-        Encoding.ASCII.GetBytes(headerText, 0, Math.Min(headerText.Length, 78), header);
+        Encoding.ASCII.GetBytes(headerText, 0, Math.Min(headerText.Length, 78), header, 0);
 
         var tempPath = filePath + ".tmp-export";
         try
