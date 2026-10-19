@@ -32,6 +32,12 @@ public sealed record MeshValidationResult(
 public static class MeshValidator
 {
     /// <summary>
+    /// سقف تعداد وجه برای بررسی تقاطع خودی (گام ۰٫۴٫۰) — بالاتر از این، بررسی جفتی سلولی
+    /// حافظه/زمان انفجاری دارد و با پیام صادقانه رد می‌شود (مش‌های کیفیت فوق‌دقیق/حدی).
+    /// </summary>
+    public const int MaxSelfIntersectionFaceCount = 250_000;
+
+    /// <summary>
     /// مش را کامل بررسی می‌کند.
     /// </summary>
     /// <param name="mesh">مش ورودی.</param>
@@ -71,9 +77,22 @@ public static class MeshValidator
         var selfIntersections = 0;
         if (checkSelfIntersection)
         {
-            selfIntersections = CountSelfIntersections(mesh);
-            if (selfIntersections > 0)
-                issues.Add($"{selfIntersections} مورد تقاطع خودی مشکوک پیدا شد (بررسی هیوریستیکی).");
+            if (mesh.Triangles.Length > MaxSelfIntersectionFaceCount)
+            {
+                // گارد مقیاس (گام ۰٫۴٫۰): با کیفیت‌های فوق‌دقیق/حدی، مش به میلیون‌ها وجه می‌رسد؛
+                // بررسی جفتیِ سلولی روی چنین تراکمی حافظه/زمان انفجاری دارد و میزبان را می‌اندازد.
+                // صداقت به‌جای عدد جعلی: بررسی انجام نشد و در Issues اعلام می‌شود (SelfIntersections==0 نیست).
+                selfIntersections = -1;
+                issues.Add(
+                    $"بررسی تقاطع خودی برای مش‌های بزرگ‌تر از {MaxSelfIntersectionFaceCount:N0} وجه به دلیل هزینهٔ محاسباتی انجام نشد؛ " +
+                    "بدون-تقاطع‌بودن این مش تأیید نشده است.");
+            }
+            else
+            {
+                selfIntersections = CountSelfIntersections(mesh);
+                if (selfIntersections > 0)
+                    issues.Add($"{selfIntersections} مورد تقاطع خودی مشکوک پیدا شد (بررسی هیوریستیکی).");
+            }
         }
 
         return new MeshValidationResult(watertight, orientationOk, zeroArea > 0, selfIntersections, issues);
