@@ -8,31 +8,115 @@ namespace Sahand.Geometry.Meshing;
 /// <remarks>
 /// مدل ریاضی: سطح رزوه = تابع شعاعی R(θ,z) = ρ(z − Δ(θ)) که در آن
 /// Δ(θ) = ±(lead/2π)·θ است (علامت بر اساس راست‌گرد/چپ‌گرد) و ρ تابع پروفیل تناوبی
-/// با دورهٔ lead است (الزام تفکیک pitch/lead در سند ۷-۵ همین‌جا اعمال می‌شود:
-/// برای چندشروع، ρ در هر دورهٔ lead تعداد «شروع‌ها» دندانه دارد و فاز زاویه‌ای
-/// دندانه‌های دو رشتهٔ مختلف به‌طور طبیعی از جابه‌جایی مارپیچی بیرون می‌آید).
-/// runout (گذار ساق صاف به رزوه) با شیب خطی و پخ نوک با مخروط ۴۵ درجه ترکیب می‌شود.
+/// با دورهٔ lead است. تفکیک pitch/lead (سند ۷-۵) همین‌جا اعمال می‌شود: برای چندشروع،
+/// ρ در هر دورهٔ lead تعداد «شروع‌ها» دندانه دارد و فاز زاویه‌ای دندانه‌های رشته‌های
+/// مختلف به‌طور طبیعی از جابه‌جایی مارپیچی بیرون می‌آید.
+/// ناحیهٔ کامل رزوه می‌تواند چند تکه باشد (مثل میلهٔ دو سر رزوه با میان‌بخش صاف)؛
+/// گذارِ هر مرز با شیب خطی ۱٫۵ گام (runout) انجام می‌شود و کل ساق با «یک» تابع شعاع
+/// و «یک» شبکه ساخته می‌شود تا یال‌های مشترک دقیق و مش بسته بماند.
 /// محدودیت صادقانه: زوایای شکست پروفیل روی همهٔ θ دقیق نمی‌افتند؛ خطای وتر با preset
-/// کیفیت کنترل می‌شود (سند ۴-۴) و در گزارش کیفیت قابل مشاهده است.
+/// کیفیت کنترل می‌شود (سند ۴-۴).
 /// </remarks>
 public static class ThreadedSurface
 {
+    /// <summary>ناحیهٔ رزوهٔ کامل [From, To] برحسب میلی‌متر روی محور قطعه.</summary>
+    public readonly record struct ThreadZone(double FromMm, double ToMm);
+
+    /// <summary>طول گذار runout برحسب میلی‌متر — ۱٫۵ گام؛ تقریب نمایشیِ متداول.</summary>
+    private static double RunoutLength(ThreadSpec spec) => 1.5 * spec.PitchMm;
+
     /// <summary>
-    /// ساق رزوه‌دار کامل پیچ را می‌سازد: سطح جانبی + درپوش‌های دو سر.
+    /// تابع شعاع کامل ساق رزوه‌دار را می‌سازد — استفادهٔ مشترکِ سازندهٔ ساق و درپوش‌های حلقه‌ای سر.
+    /// </summary>
+    /// <param name="spec">مشخصات رزوه.</param>
+    /// <param name="profile">پروفیل تناوبی.</param>
+    /// <param name="nominalRadiusMm">شعاع اسمی ساق (سطح صاف/تاج).</param>
+    /// <param name="zones">نواحی رزوهٔ کامل.</param>
+    /// <param name="zStartMm">مرجع مخروط و پخ سر.</param>
+    /// <param name="zEndMm">مرجع پخ نوک.</param>
+    /// <param name="tipChamferMm">پخ نوک (سمت z بزرگ‌تر).</param>
+    /// <param name="endChamferMm">پخ سر (سمت z کوچک‌تر).</param>
+    public static Func<double, double, double> CreateShankRadiusFunction(
+        ThreadSpec spec,
+        RadialProfileFunction profile,
+        double nominalRadiusMm,
+        ThreadZone[] zones,
+        double zStartMm,
+        double zEndMm,
+        double tipChamferMm,
+        double endChamferMm)
+    {
+        ArgumentNullException.ThrowIfNull(spec);
+        ArgumentNullException.ThrowIfNull(profile);
+        ArgumentNullException.ThrowIfNull(zones);
+
+        var lead = spec.LeadMm;
+        var handedSign = spec.Handedness == ThreadHandedness.Right ? 1.0 : -1.0;
+        var taperFactor = Math.Tan(spec.TaperDegrees * Math.PI / 180.0);
+        var runout = RunoutLength(spec);
+        var rootRadius = profile.MinRadius;
+
+        return (theta, z) =>
+        {
+            // جابه‌جایی مارپیچی: راست‌گرد = افزایش z با افزایش θ (دید از +Z).
+            var delta = handedSign * lead * theta / (2.0 * Math.PI);
+            var r = profile.Evaluate(z - delta);
+
+            // گذار هر مرز ناحیه با شیب خطی؛ بیرون از گذار اثر ندارد.
+            foreach (var zone in zones)
+            {
+                if (z < zone.FromMm)
+                {
+                    var t = Math.Clamp((zone.FromMm - z) / runout, 0.0, 1.0);
+                    r = Math.Max(r, rootRadius + t * (nominalRadiusMm - rootRadius));
+                }
+                else if (z > zone.ToMm)
+                {
+                    var t = Math.Clamp((z - zone.ToMm) / runout, 0.0, 1.0);
+                    r = Math.Max(r, rootRadius + t * (nominalRadiusMm - rootRadius));
+                }
+            }
+
+            // مخروط (NPT/BSP): مقیاس نسبی شعاع با z.
+            if (taperFactor > 0)
+            {
+                r *= (nominalRadiusMm + (z - zStartMm) * taperFactor) / nominalRadiusMm;
+            }
+
+            // پخ نوک ۴۵ درجه: از (zEnd − پخ) تا شعاع (اسمی − پخ) در نوک.
+            if (tipChamferMm > 0 && z > zEndMm - tipChamferMm)
+            {
+                var cone = nominalRadiusMm - (z - (zEndMm - tipChamferMm));
+                r = Math.Min(r, Math.Max(cone, 0.0));
+            }
+
+            // پخ سر ۴۵ درجه (میل دوطرفه).
+            if (endChamferMm > 0 && z < zStartMm + endChamferMm)
+            {
+                var cone = nominalRadiusMm - (zStartMm + endChamferMm - z);
+                r = Math.Min(r, Math.Max(cone, 0.0));
+            }
+
+            return Math.Max(r, 0.0);
+        };
+    }
+
+    /// <summary>
+    /// ساق رزوه‌دار کامل را می‌سازد: سطح جانبی یکپارچه + درپوش‌های دلخواه دو سر.
     /// </summary>
     /// <param name="mesh">مش مقصد.</param>
     /// <param name="spec">مشخصات رزوه.</param>
-    /// <param name="profile">تابع پروفیل تناوبی (ساخته‌شده با ThreadProfileFactory).</param>
-    /// <param name="zStartMm">آغاز ساق (معمولاً ۰ = زیر سر).</param>
+    /// <param name="profile">پروفیل تناوبی.</param>
+    /// <param name="zStartMm">آغاز ساق.</param>
     /// <param name="zEndMm">انتهای ساق (نوک).</param>
-    /// <param name="nominalRadiusMm">شعاع اسمی ساق (برای ساق صاف و مخروط پخ).</param>
-    /// <param name="threadStartMm">آغاز ناحیهٔ کامل رزوه؛ قبل از آن ساق صاف + runout است.</param>
+    /// <param name="nominalRadiusMm">شعاع اسمی ساق.</param>
+    /// <param name="zones">نواحی رزوهٔ کامل.</param>
     /// <param name="tipChamferMm">پخ نوک (۰ = بدون پخ).</param>
-    /// <param name="endChamferMm">پخ سرِ ساق در zStart (۰ = بدون پخ؛ برای میل دوطرفه).</param>
-    /// <param name="grid">شبکهٔ زاویه‌ای مشترک با سایر اجزای قطعه.</param>
+    /// <param name="endChamferMm">پخ سر در zStart (۰ = بدون پخ).</param>
+    /// <param name="grid">شبکهٔ زاویه‌ای مشترک.</param>
     /// <param name="zStepMm">گام z شبکه.</param>
-    /// <param name="capStart">درپوش در zStart لازم است (زیر سر معمولاً خودِ حلقهٔ سر می‌پوشاند).</param>
-    /// <param name="capEnd">درپوش نوک لازم است.</param>
+    /// <param name="capStart">درپوش در zStart (زیر سرِ پیچ لازم نیست؛ حلقهٔ سر می‌پوشاند).</param>
+    /// <param name="capEnd">درپوش نوک.</param>
     public static void AddThreadedShank(
         MeshBuilder mesh,
         ThreadSpec spec,
@@ -40,7 +124,7 @@ public static class ThreadedSurface
         double zStartMm,
         double zEndMm,
         double nominalRadiusMm,
-        double threadStartMm,
+        ThreadZone[] zones,
         double tipChamferMm,
         double endChamferMm,
         AngularGrid grid,
@@ -51,65 +135,34 @@ public static class ThreadedSurface
         ArgumentNullException.ThrowIfNull(mesh);
         ArgumentNullException.ThrowIfNull(spec);
         ArgumentNullException.ThrowIfNull(profile);
+        ArgumentNullException.ThrowIfNull(zones);
         if (zEndMm <= zStartMm) throw new ArgumentException("انتهای ساق باید بزرگ‌تر از آغاز آن باشد.");
 
-        var lead = spec.LeadMm;
-        var handedSign = spec.Handedness == ThreadHandedness.Right ? 1.0 : -1.0;
-        var taperFactor = Math.Tan(spec.TaperDegrees * Math.PI / 180.0);
+        var radiusAt = CreateShankRadiusFunction(
+            spec, profile, nominalRadiusMm, zones, zStartMm, zEndMm, tipChamferMm, endChamferMm);
 
-        // طول ناحیهٔ runout: ۱٫۵ گام — گذار تدریجی ساق صاف به دندانهٔ کامل (تقریب استانداردِ نمایشی).
-        var runoutLength = 1.5 * spec.PitchMm;
-        var runoutStart = threadStartMm - runoutLength;
-
-        double RadiusAt(double theta, double z)
+        // سطوح ویژهٔ z: مرزهای نواحی/گذارها و پخ‌ها تا مرزهای تیز روی رأس شبکه بیفتند.
+        var runout = RunoutLength(spec);
+        var special = new List<double> { zStartMm, zEndMm };
+        foreach (var zone in zones)
         {
-            // جابه‌جایی مارپیچی: جهت راست‌گرد = افزایش z با افزایش θ (دیده از +Z).
-            var delta = handedSign * lead * theta / (2.0 * Math.PI);
-            var r = profile.Evaluate(z - delta);
-
-            // runout: از شعاع اسمی (ساق صاف) به کف رزوه به‌طور خطی می‌رسیم؛ max دندانه را «قورت» می‌دهد.
-            if (z < threadStartMm)
-            {
-                var t = Math.Clamp((z - runoutStart) / runoutLength, 0.0, 1.0);
-                var ramp = nominalRadiusMm - t * (nominalRadiusMm - profile.MinRadius);
-                r = Math.Max(r, ramp);
-            }
-
-            // مخروط (NPT/BSP): کل پروفیل با شعاع نسبی z بزرگ می‌شود؛ مرجع zStart.
-            if (taperFactor > 0)
-            {
-                r *= (nominalRadiusMm + (z - zStartMm) * taperFactor) / nominalRadiusMm;
-            }
-
-            // پخ نوک ۴۵ درجه: از (zEnd − پخ) به انتهای شعاعِ (اسمی − پخ) خطی کوچک می‌شود.
-            if (tipChamferMm > 0 && z > zEndMm - tipChamferMm)
-            {
-                var cone = nominalRadiusMm - (z - (zEndMm - tipChamferMm));
-                r = Math.Min(r, Math.Max(cone, 0.0));
-            }
-
-            // پخ سر ساق (برای میل دو سر): متقارن با نوک.
-            if (endChamferMm > 0 && z < zStartMm + endChamferMm)
-            {
-                var cone = nominalRadiusMm - (zStartMm + endChamferMm - z);
-                r = Math.Min(r, Math.Max(cone, 0.0));
-            }
-
-            return Math.Max(r, 0.0);
+            special.Add(zone.FromMm);
+            special.Add(zone.ToMm);
+            special.Add(zone.FromMm - runout);
+            special.Add(zone.ToMm + runout);
         }
+        if (tipChamferMm > 0) special.Add(zEndMm - tipChamferMm);
+        if (endChamferMm > 0) special.Add(zStartMm + endChamferMm);
 
-        // سطوح z شبکه: یکنواخت + نقاط ویژهٔ ساختاری (گذرها و پخ‌ها) تا مرزها تیز بمانند.
-        var zLevels = BuildZLevels(zStartMm, zEndMm, zStepMm,
-            specialLevels: [threadStartMm, runoutStart, zEndMm - tipChamferMm, zStartMm + endChamferMm]);
+        var zLevels = BuildZLevels(zStartMm, zEndMm, zStepMm, [.. special]);
 
-        RadialSurface.AddOutwardSurface(mesh, grid, RadiusAt, zLevels);
+        RadialSurface.AddOutwardSurface(mesh, grid, radiusAt, zLevels);
 
-        // درپوش‌ها: بادبزکی از محور؛ مرز درپوش همان تابع شعاعی در z انتهایی است (ستاره‌ای).
         if (capStart)
-            RadialSurface.AddDiscCap(mesh, grid, theta => RadiusAt(theta, zStartMm), zStartMm, solidBelow: false);
+            RadialSurface.AddDiscCap(mesh, grid, theta => radiusAt(theta, zStartMm), zStartMm, solidBelow: false);
 
         if (capEnd)
-            RadialSurface.AddDiscCap(mesh, grid, theta => RadiusAt(theta, zEndMm), zEndMm, solidBelow: true);
+            RadialSurface.AddDiscCap(mesh, grid, theta => radiusAt(theta, zEndMm), zEndMm, solidBelow: true);
     }
 
     /// <summary>
@@ -119,8 +172,8 @@ public static class ThreadedSurface
     /// <param name="spec">مشخصات رزوهٔ داخلی.</param>
     /// <param name="profile">پروفیل داخلی (دره روی دیواره، نوک به محور).</param>
     /// <param name="zBottomMm">کف مهره (۰).</param>
-    /// <param name="zTopMm">سطح بالای مهره (ارتفاع).</param>
-    /// <param name="mouthChamferMm">پخ دهانهٔ دو سر حفره (کمک به شروع پیچش و چاپ).</param>
+    /// <param name="zTopMm">سطح بالای مهره.</param>
+    /// <param name="mouthChamferMm">پخ دهانهٔ دو سر حفره.</param>
     /// <param name="grid">شبکهٔ زاویه‌ای مشترک.</param>
     /// <param name="zStepMm">گام z.</param>
     public static void AddInternalCavity(
@@ -146,7 +199,7 @@ public static class ThreadedSurface
             var delta = handedSign * lead * theta / (2.0 * Math.PI);
             var r = profile.Evaluate(z - delta);
 
-            // پخ دهانه: حفره در دو سر به‌صورت مخروط ۴۵ درجه باز می‌شود (کمک به شروع پیچش و چاپ).
+            // پخ دهانه: حفره در دو سر با مخروط ۴۵ درجه باز می‌شود (کمک به شروع پیچش و چاپ).
             if (mouthChamferMm > 0)
             {
                 var holeRadius = profile.MaxRadius; // شعاع دیوارهٔ حفره (درهٔ داخلی).
@@ -159,35 +212,29 @@ public static class ThreadedSurface
         }
 
         var zLevels = BuildZLevels(zBottomMm, zTopMm, zStepMm,
-            specialLevels: [zBottomMm + mouthChamferMm, zTopMm - mouthChamferMm]);
+            [zBottomMm + mouthChamferMm, zTopMm - mouthChamferMm]);
 
         RadialSurface.AddInwardSurface(mesh, grid, RadiusAt, zLevels);
     }
 
     /// <summary>
-    /// سطوح z شبکه را می‌سازد: یکنواخت + سطوح ویژه (مرزها/گذارها) مرتب و بدون تکرار.
+    /// سطوح z شبکه را می‌سازد: یکنواخت + سطوح ویژه مرتب و بدون تکرار.
     /// </summary>
     private static List<double> BuildZLevels(double zStart, double zEnd, double zStep, double[] specialLevels)
     {
         var step = Math.Max(zStep, 1e-4);
         var count = (int)Math.Ceiling((zEnd - zStart) / step);
-        var levels = new List<double>(count + 8);
+        var levels = new List<double>(count + 12);
 
         for (var i = 0; i <= count; i++)
         {
-            // clamp تا zEnd دقیق بیفتد؛ آخرین سطح دقیقاً zEnd است.
             levels.Add(Math.Min(zStart + i * step, zEnd));
         }
 
-        foreach (var special in specialLevels)
-        {
-            if (special > zStart + 1e-9 && special < zEnd - 1e-9)
-                levels.Add(special);
-        }
-
+        levels.AddRange(specialLevels.Where(s => s > zStart + 1e-9 && s < zEnd - 1e-9));
         levels.Sort();
 
-        // حذف تکراری‌های نزدیک (کمتر از 1e-7) که وجه‌های بی‌مساحت می‌سازند.
+        // حذف تکراری‌های نزدیک که وجه بی‌مساحت می‌سازند.
         var result = new List<double>(levels.Count) { levels[0] };
         foreach (var z in levels)
         {
@@ -195,7 +242,6 @@ public static class ThreadedSurface
                 result.Add(z);
         }
 
-        // تضمین سرِ پایانی دقیق.
         if (result[^1] < zEnd - 1e-9)
             result.Add(zEnd);
 
