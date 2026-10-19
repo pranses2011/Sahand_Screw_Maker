@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    لایهٔ خروجی‌گیرها: STL/OBJ/PLY/3MF/GLB/DXF با نوشتن اتمیک و اعتبارسنجی round-trip.
+    قید: بدون وابستگی NuGet در زمان اجرا — تمام فرمت‌ها دستی و با مجوز باز نوشته می‌شوند.
+  -->
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>Sahand.Exporters</RootNamespace>
+    <AssemblyName>Sahand.Exporters</AssemblyName>
+    <Description>خروجی‌گیرهای «طراح پیچ و مهره سهند»</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Sahand.Core\Sahand.Core.csproj" />
+    <ProjectReference Include="..\Sahand.Geometry\Sahand.Geometry.csproj" />
+  </ItemGroup>
+
+</Project>
