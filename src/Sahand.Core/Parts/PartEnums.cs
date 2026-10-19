@@ -47,6 +47,9 @@ public enum DriveStyle
     /// <summary>حفرهٔ شش‌گوش داخلی (آلن).</summary>
     HexSocket,
 
+    /// <summary>حفرهٔ شش‌پر تورکس (ISO 10664) — گسترش ۰٫۳٫۰.</summary>
+    Torx,
+
     /// <summary>شیار تخت (Slot).</summary>
     Slot,
 
