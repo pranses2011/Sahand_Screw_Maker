@@ -43,12 +43,12 @@ public static class PartValidator
                     $"ارتفاع سر خزینه ({bolt.HeadHeightMm:0.###}mm) برای قطر سر {headD:0.###}mm و زاویهٔ {bolt.CountersunkAngleDegrees:0.#}° بیش از حد بزرگ است؛ رویهٔ بالایی از ساق کوچک‌تر می‌شود. ارتفاع را کم یا قطر سر/زاویه را زیاد کنید.");
         }
 
-        // محرک آلن فقط روی سرهایی معنا دارد که حفره می‌پذیرند.
-        if (bolt.Drive == DriveStyle.HexSocket)
+        // محرک‌های حفره‌ای روی سرهای پذیرا (گسترش ۰٫۴٫۰: Button/Flange هم پذیرفته می‌شوند).
+        if (bolt.Drive is DriveStyle.HexSocket or DriveStyle.PinHex)
         {
-            if (bolt.Head is not (HeadStyle.SocketCap or HeadStyle.Hex))
+            if (bolt.Head is not (HeadStyle.SocketCap or HeadStyle.Hex or HeadStyle.Button or HeadStyle.Flange))
                 result.AddError("Drive",
-                    $"حفرهٔ آلن روی سر «{bolt.Head}» در این نسخه پشتیبانی نمی‌شود؛ سر استوانه‌ای آلن یا شش‌گوش را انتخاب کنید.");
+                    $"حفرهٔ آلن روی سر «{bolt.Head}» در این نسخه پشتیبانی نمی‌شود؛ سر استوانه‌ای آلن، شش‌گوش، دکمه‌ای یا فلنجی را انتخاب کنید.");
 
             if (bolt.HexSocketAcrossFlatsMm is not > 0)
                 result.AddError("HexSocketAcrossFlatsMm", "قطر حفرهٔ آلن باید مثبت باشد.");
@@ -68,12 +68,12 @@ public static class PartValidator
                     "حفرهٔ آلن از قطر سر بزرگ‌تر می‌شود؛ قطر حفره یا قطر سر را اصلاح کنید.");
         }
 
-        // محرک تورکس (گسترش ۰٫۳٫۰) — همان خانوادهٔ سرهای حفره‌پذیرِ آلن.
-        if (bolt.Drive == DriveStyle.Torx)
+        // محرک تورکس (گسترش ۰٫۳٫۰) و تورکس امنیتی (۰٫۴٫۰) — خانوادهٔ سرهای حفره‌پذیر.
+        if (bolt.Drive is DriveStyle.Torx or DriveStyle.SecurityTorx)
         {
-            if (bolt.Head is not (HeadStyle.SocketCap or HeadStyle.Hex))
+            if (bolt.Head is not (HeadStyle.SocketCap or HeadStyle.Hex or HeadStyle.Button or HeadStyle.Flange))
                 result.AddError("Drive",
-                    $"حفرهٔ تورکس روی سر «{bolt.Head}» در این نسخه پشتیبانی نمی‌شود؛ سر استوانه‌ای آلن یا شش‌گوش را انتخاب کنید.");
+                    $"حفرهٔ تورکس روی سر «{bolt.Head}» در این نسخه پشتیبانی نمی‌شود؛ سر استوانه‌ای آلن، شش‌گوش، دکمه‌ای یا فلنجی را انتخاب کنید.");
 
             if (bolt.TorxAcrossLobesMm is not > 0)
                 result.AddError("TorxAcrossLobesMm", "قطر اسمی تورکس (روی پَرها) باید مثبت باشد.");
@@ -98,6 +98,25 @@ public static class PartValidator
                     "حفرهٔ تورکس از مرز تخت‌های سر شش‌گوش بزرگ می‌شود؛ قطر تورکس یا عرض آچارخور را اصلاح کنید.");
         }
 
+        // محرک‌های امنیتی پین‌دار (گسترش ۰٫۴٫۰): پین باید داخل حفره جا شود و از کف بلند شود.
+        if (bolt.Drive is DriveStyle.PinHex or DriveStyle.SecurityTorx)
+        {
+            if (bolt.SecurityPinDiameterMm is not > 0)
+                result.AddError("SecurityPinDiameterMm", "قطر پین مرکزی محرک امنیتی باید مثبت باشد.");
+
+            if (bolt.Drive == DriveStyle.PinHex && bolt.SecurityPinDiameterMm is > 0 &&
+                bolt.HexSocketAcrossFlatsMm is > 0 &&
+                bolt.SecurityPinDiameterMm >= bolt.HexSocketAcrossFlatsMm / 2.0)
+                result.AddError("SecurityPinDiameterMm",
+                    $"قطر پین ({bolt.SecurityPinDiameterMm:0.###}mm) باید از نصف عرض آچارخور حفره ({bolt.HexSocketAcrossFlatsMm / 2.0:0.###}mm) کوچک‌تر باشد؛ پین به دیوارهٔ حفره می‌چسبد و آچار امنیتی هم جا نمی‌شود.");
+
+            if (bolt.Drive == DriveStyle.SecurityTorx && bolt.SecurityPinDiameterMm is > 0 &&
+                bolt.TorxAcrossLobesMm is > 0 &&
+                bolt.SecurityPinDiameterMm >= bolt.TorxAcrossLobesMm * 0.72 / 2.0)
+                result.AddError("SecurityPinDiameterMm",
+                    "قطر پین از قطر درهٔ تورکس (≈۰٫۷۲ قطر اسمی) بزرگ‌تر است؛ پین به پَرها می‌چسبد و آچار امنیتی جا نمی‌شود.");
+        }
+
         if (bolt.Drive is DriveStyle.Slot or DriveStyle.Phillips)
         {
             if (bolt.SlotWidthMm is not > 0)
@@ -113,8 +132,41 @@ public static class PartValidator
         if (bolt.Head == HeadStyle.Hex && bolt.HeadAcrossFlatsMm is not > 0)
             result.AddError("HeadAcrossFlatsMm", "عرض آچارخور سر شش‌گوش باید مثبت باشد.");
 
-        if (bolt.Head is HeadStyle.SocketCap or HeadStyle.Pan && bolt.HeadDiameterMm is not > 0)
+        if (bolt.Head is HeadStyle.SocketCap or HeadStyle.Pan or HeadStyle.Button && bolt.HeadDiameterMm is not > 0)
             result.AddError("HeadDiameterMm", $"قطر سر «{bolt.Head}» باید مثبت باشد.");
+
+        // سر دکمه‌ای: محرک فقط حفره‌ای (روی پلتفرم قله) — شیار روی گنبد این نسخه نیست.
+        if (bolt.Head == HeadStyle.Button && bolt.Drive is not (
+            DriveStyle.None or DriveStyle.HexSocket or DriveStyle.Torx or
+            DriveStyle.PinHex or DriveStyle.SecurityTorx))
+            result.AddError("Drive",
+                "محرک روی سر دکمه‌ای در این نسخه فقط حفرهٔ آلن/تورکس (یا پین‌دار امنیتی) پشتیبانی می‌شود؛ شیار روی گنبد در برنامهٔ توسعه است.");
+
+        // سر فلنجی (گسترش ۰٫۴٫۰): دیسک فلنج باید شش‌گوش را بپوشاند و در ارتفاع سر جا شود.
+        if (bolt.Head == HeadStyle.Flange)
+        {
+            if (bolt.HeadAcrossFlatsMm is not > 0)
+                result.AddError("HeadAcrossFlatsMm", "عرض آچارخور سر شش‌گوشِ فلنجی باید مثبت باشد.");
+
+            if (bolt.FlangeDiameterMm is not > 0)
+                result.AddError("FlangeDiameterMm", "قطر دیسک فلنج باید مثبت باشد.");
+
+            if (bolt.FlangeThicknessMm is not > 0)
+                result.AddError("FlangeThicknessMm", "ضخامت دیسک فلنج باید مثبت باشد.");
+
+            if (bolt.FlangeDiameterMm is > 0 && bolt.HeadAcrossFlatsMm is > 0 &&
+                bolt.FlangeDiameterMm <= bolt.HeadAcrossFlatsMm * 1.02)
+                result.AddError("FlangeDiameterMm",
+                    $"قطر فلنج ({bolt.FlangeDiameterMm:0.###}mm) باید از عرض آچارخور شش‌گوش ({bolt.HeadAcrossFlatsMm:0.###}mm) بزرگ‌تر باشد؛ دیسکی باقی نمی‌ماند.");
+
+            if (bolt.FlangeThicknessMm is > 0 && bolt.FlangeThicknessMm >= bolt.HeadHeightMm)
+                result.AddError("FlangeThicknessMm",
+                    $"ضخامت فلنج ({bolt.FlangeThicknessMm:0.###}mm) باید از ارتفاع کل سر ({bolt.HeadHeightMm:0.###}mm) کمتر باشد؛ بخش شش‌گوش باقی نمی‌ماند.");
+
+            if (bolt.FlangeThicknessMm is > 0 && bolt.FlangeThicknessMm < bolt.HeadHeightMm * 0.15)
+                result.AddWarning("FlangeThicknessMm",
+                    "ضخامت فلنج نسبت به ارتفاع سر خیلی کم است؛ لبهٔ فلنج نازک و شکننده می‌شود.");
+        }
 
         // سر شش‌گوش باید ساق را بپوشاند (بدون برش ناگهانی زیر سر).
         if (bolt.Head == HeadStyle.Hex && bolt.HeadAcrossFlatsMm is > 0 &&
