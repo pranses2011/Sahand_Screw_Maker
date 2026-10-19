@@ -116,7 +116,7 @@ public partial class PrintView : UserControl, INotifyPropertyChanged
             };
 
             var mesh = await System.Threading.Tasks.Task.Run(() =>
-                PartMeshFactory.Build(printDoc, MeshQualityPreset.Balanced));
+                PartMeshFactory.Build(printDoc, MeshQualityPreset.Fine));
 
             _owner.Session.PrintMesh = mesh;
             _owner.Session.LastPrintDiff = adjusted.Diff;

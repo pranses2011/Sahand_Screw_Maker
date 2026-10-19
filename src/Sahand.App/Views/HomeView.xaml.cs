@@ -97,7 +97,7 @@ public partial class HomeView : UserControl
         try
         {
             var mesh = await System.Threading.Tasks.Task.Run(() =>
-                PartMeshFactory.Build(document, MeshQualityPreset.Balanced));
+                PartMeshFactory.Build(document, MeshQualityPreset.Fine));
             _owner.Session.Document = document;
             _owner.Session.NominalMesh = mesh;
             _owner.Session.PrintMesh = null;
@@ -128,7 +128,7 @@ public partial class HomeView : UserControl
         try
         {
             var document = Core.Project.SsndFile.Load(dialog.FileName);
-            var mesh = PartMeshFactory.Build(document, MeshQualityPreset.Balanced);
+            var mesh = PartMeshFactory.Build(document, MeshQualityPreset.Fine);
 
             _owner.Session.Document = document;
             _owner.Session.NominalMesh = mesh;
