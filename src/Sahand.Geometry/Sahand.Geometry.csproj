@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    موتور هندسهٔ مش پارامتریک — تولید مشِ watertight برای پیچ/مهره/واشر/میل با رزوهٔ مارپیچ واقعی.
+    قید: بدون وابستگی به Windows و بدون کتابخانهٔ خارجی تا روی Linux آزمون‌پذیر و کاملاً آفلاین باشد.
+  -->
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>Sahand.Geometry</RootNamespace>
+    <AssemblyName>Sahand.Geometry</AssemblyName>
+    <Description>موتور هندسهٔ «طراح پیچ و مهره سهند»</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Sahand.Core\Sahand.Core.csproj" />
+  </ItemGroup>
+
+</Project>
