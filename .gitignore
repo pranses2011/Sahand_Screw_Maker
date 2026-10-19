@@ -28,3 +28,7 @@ appsettings.local.json
 # --- سیستم‌عامل ---
 Thumbs.db
 .DS_Store
+
+# --- بسته‌های publish و نصب‌کننده (خروجی، نه منبع) ---
+publish/
+dist/
