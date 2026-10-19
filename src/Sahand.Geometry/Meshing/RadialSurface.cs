@@ -58,8 +58,9 @@ public static class RadialSurface
                 var v11 = vertexIndex[(zi + 1) * uniqueCount + aNext];
                 var v10 = vertexIndex[zi * uniqueCount + aNext];
 
-                // ترتیب (v00, v01, v11, v10): نرمال رو به بیرون (r̂+) برای افزایش θ و z.
-                mesh.AddQuad(v00, v01, v11, v10);
+                // ترتیب (v00, v10, v11, v01): نرمال رو به بیرون (r̂+) — با آزمون ضرب خارجی
+                // برداری راستی‌آزمایی شده است: (a_i→a_next)×(a_i→b_i) ∝ +r̂ برای افزایش θ.
+                mesh.AddQuad(v00, v10, v11, v01);
             }
         }
     }
@@ -102,8 +103,8 @@ public static class RadialSurface
                 var v11 = vertexIndex[(zi + 1) * uniqueCount + aNext];
                 var v10 = vertexIndex[zi * uniqueCount + aNext];
 
-                // ترتیب معکوس: نرمال رو به محور (−r̂) — قرارداد مش بیرونیِ جسمِ مهره.
-                mesh.AddQuad(v00, v10, v11, v01);
+                // ترتیب معکوس سطح بیرونی: نرمال رو به محور (−r̂) — قرارداد مش بیرونیِ جسم (حفره).
+                mesh.AddQuad(v00, v01, v11, v10);
             }
         }
     }
