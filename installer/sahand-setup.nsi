@@ -1,7 +1,7 @@
 ; ============================================================================
 ;  نصب‌کنندهٔ «طراح پیچ و مهره سهند» — NSIS 3 با رابط فارسی (راست‌چین خودکار)
 ;  کامپایل:  NSISDIR=<nsis>/usr/share/nsis makensis installer/sahand-setup.nsi
-;  خروجی:    dist/SahandScrewMaker-Setup-0.1.0.exe
+;  خروجی:    dist/SahandScrewMaker-Setup-0.2.0.exe
 ;  یادداشت: این نصب‌کننده روی Linux کامپایل شده؛ فرایند نصب باید روی Windows
 ;  واقعی تأیید شود (صداقت مهندسی — سند ۶).
 ; ============================================================================
@@ -12,7 +12,7 @@ SetCompressor /SOLID lzma
 
 !define APPNAME    "طراح پیچ و مهره سهند"
 !define APPNAMEEN  "Sahand Screw & Nut Designer"
-!define VERSION    "0.1.0"
+!define VERSION    "0.2.0"
 !define ARP        "Software\Microsoft\Windows\CurrentVersion\Uninstall\SahandScrewMaker"
 !define MUI_ICON   "..\src\Sahand.App\app.ico"
 !define MUI_UNICON "..\src\Sahand.App\app.ico"
@@ -25,7 +25,7 @@ InstallDirRegKey HKLM "Software\SahandScrewMaker" "InstallDir"
 RequestExecutionLevel admin
 ShowUninstDetails show
 
-VIProductVersion "0.1.0.0"
+VIProductVersion "0.2.0.0"
 VIAddVersionKey "ProductName"     "${APPNAMEEN}"
 VIAddVersionKey "ProductVersion" "${VERSION}"
 VIAddVersionKey "FileVersion"    "${VERSION}"
