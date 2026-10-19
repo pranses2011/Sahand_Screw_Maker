@@ -11,7 +11,7 @@
     <AssemblyName>ssnd-cli</AssemblyName>
     <Description>ابزار خط فرمان «طراح پیچ و مهره سهند»</Description>
     <InvariantGlobalization>false</InvariantGlobalization>
-      <Version>0.3.0</Version>
+      <Version>0.4.0</Version>
   </PropertyGroup>
 
   <ItemGroup>
