@@ -153,6 +153,21 @@ public static class ThreadProfileFactory
     }
 
     /// <summary>
+    /// نیم‌زاویهٔ پروفیل اسمی هر خانواده (درجه) — منبع واحد برای UI/کاتالوگ/سازگارسنجی.
+    /// </summary>
+    /// <param name="family">خانوادهٔ رزوه.</param>
+    /// <remarks>مربع/سفارشی عمودی‌اند (۰ درجه)؛ بقیه مطابق پروفیل پایهٔ شناخته‌شده.</remarks>
+    public static double FamilyHalfAngleDegrees(ThreadFamily family) => family switch
+    {
+        ThreadFamily.IsoMetric or ThreadFamily.Unified or ThreadFamily.Npt => 30.0,
+        ThreadFamily.Whitworth or ThreadFamily.Bsp => 27.5,
+        ThreadFamily.IsoTrapezoidal => 30.0,
+        ThreadFamily.Acme => 14.5,
+        ThreadFamily.Square or ThreadFamily.Custom => 0.0,
+        _ => 30.0,
+    };
+
+    /// <summary>
     /// پارامترهای پروفیل پایهٔ هر خانواده را برمی‌گرداند (عمق، پهنای تاج/دره، نیم‌زاویه).
     /// </summary>
     /// <remarks>
