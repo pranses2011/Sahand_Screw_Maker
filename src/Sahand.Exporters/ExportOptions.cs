@@ -17,6 +17,12 @@ public enum ExportQualityPreset
 
     /// <summary>بسیار دقیق — فایل و زمان سنگین.</summary>
     VeryFine,
+
+    /// <summary>فوق‌دقیق — مش خیلی ریز برای نرمی عالی رزوه (گسترش ۰٫۴٫۰).</summary>
+    Ultra,
+
+    /// <summary>حدی — بیشترین نرمی قطعه؛ سنگین‌ترین فایل و زمان ساخت (گسترش ۰٫۴٫۰).</summary>
+    Extreme,
 }
 
 /// <summary>
