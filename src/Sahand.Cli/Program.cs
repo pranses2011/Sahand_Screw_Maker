@@ -90,9 +90,11 @@ public static class Program
                         --part bolt|nut|washer|rod|assembly   (پیش‌فرض bolt)
                         --size M6|1/4-20|1/4-20 BSW|1/2-14 NPT|G1/2-14|Tr20×4|… (همهٔ خانواده‌ها)
                         --length mm --diameter mm --pitch mm
-                        --head Hex|SocketCap|FlatCountersunk|Pan
-                        --drive None|HexSocket|Torx|Slot|Phillips
+                        --head Hex|SocketCap|FlatCountersunk|Pan|Button|Flange
+                        --drive None|HexSocket|Torx|PinHex|SecurityTorx|Slot|Phillips
                         --torx mm --torx-depth mm  (محرک تورکس)
+                        --pin-diameter mm  (محرک‌های امنیتی پین‌دار: آلن/تورکس با پین مرکزی)
+                        --flange-diameter mm --flange-thickness mm  (سر فلنجی)
                         --across-flats mm --head-height mm --height mm
                         --thread mm (طول رزوه) --left (چپ‌گرد) --simplified (بدون رزوهٔ واقعی)
                         --quality draft|balanced|fine|veryfine|ultra|extreme

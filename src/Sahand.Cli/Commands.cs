@@ -276,25 +276,34 @@ public static class Commands
             HeadHeightMm = head == HeadStyle.FlatCountersunk
                 ? ParseDouble(args, "--head-height", Math.Max(diameter * 0.375, 0.5))
                 : ParseDouble(args, "--head-height", diameter * 0.65),
-            HeadAcrossFlatsMm = head == HeadStyle.Hex
+            HeadAcrossFlatsMm = head is HeadStyle.Hex or HeadStyle.Flange
                 ? ParseDouble(args, "--across-flats", diameter * 1.55)
                 : null,
-            HeadDiameterMm = head is HeadStyle.SocketCap or HeadStyle.Pan
+            HeadDiameterMm = head is HeadStyle.SocketCap or HeadStyle.Pan or HeadStyle.Button
                 ? ParseDouble(args, "--head-diameter", diameter * 1.55)
                 : head == HeadStyle.FlatCountersunk
                     ? ParseDouble(args, "--head-diameter", diameter * 2.0)
                     : null,
-            HexSocketAcrossFlatsMm = drive == DriveStyle.HexSocket
+            FlangeDiameterMm = head == HeadStyle.Flange
+                ? ParseDouble(args, "--flange-diameter", diameter * 1.9)
+                : null,
+            FlangeThicknessMm = head == HeadStyle.Flange
+                ? ParseDouble(args, "--flange-thickness", Math.Max(diameter * 0.25, 0.8))
+                : null,
+            HexSocketAcrossFlatsMm = drive is DriveStyle.HexSocket or DriveStyle.PinHex
                 ? ParseDouble(args, "--socket", diameter * 0.55)
                 : null,
-            HexSocketDepthMm = drive == DriveStyle.HexSocket
+            HexSocketDepthMm = drive is DriveStyle.HexSocket or DriveStyle.PinHex
                 ? ParseDouble(args, "--socket-depth", diameter * 0.35)
                 : null,
-            TorxAcrossLobesMm = drive == DriveStyle.Torx
+            TorxAcrossLobesMm = drive is DriveStyle.Torx or DriveStyle.SecurityTorx
                 ? ParseDouble(args, "--torx", diameter * 0.65)
                 : null,
-            TorxDepthMm = drive == DriveStyle.Torx
+            TorxDepthMm = drive is DriveStyle.Torx or DriveStyle.SecurityTorx
                 ? ParseDouble(args, "--torx-depth", diameter * 0.32)
+                : null,
+            SecurityPinDiameterMm = drive is DriveStyle.PinHex or DriveStyle.SecurityTorx
+                ? ParseDouble(args, "--pin-diameter", Math.Max(diameter * 0.22, 0.5))
                 : null,
             SlotWidthMm = drive is DriveStyle.Slot or DriveStyle.Phillips
                 ? ParseDouble(args, "--slot-width", diameter * 0.18)
