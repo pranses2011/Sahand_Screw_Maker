@@ -143,6 +143,18 @@
                 </StackPanel>
             </GroupBox>
 
+            <!-- کیفیت ساخت مدل (گام ۰٫۴٫۰): پیش‌نمایش نرم‌تر -->
+            <StackPanel Orientation="Horizontal" Margin="0,4,0,10">
+                <TextBlock Text="کیفیت ساخت مدل:" Width="150" VerticalAlignment="Center"
+                           ToolTip="تفکیک مشِ نسخهٔ اسمی/پیش‌نمایش — ۱۹۲ بخش زاویه‌ای رزوهٔ نرم‌تر می‌دهد؛ صفحهٔ «خروجی» کیفیت جداگانهٔ خودش را دارد و تا «حدی» بالا می‌رود"/>
+                <ComboBox x:Name="BuildQualityBox" Width="180">
+                    <ComboBoxItem Content="پیش‌نویس (سریع)" Tag="Draft"/>
+                    <ComboBoxItem Content="متعادل" Tag="Balanced"/>
+                    <ComboBoxItem Content="دقیق (پیش‌فرض)" Tag="Fine" IsSelected="True"/>
+                    <ComboBoxItem Content="بسیار دقیق (سنگین)" Tag="VeryFine"/>
+                </ComboBox>
+            </StackPanel>
+
             <!-- دکمه‌ها -->
             <StackPanel Orientation="Horizontal" Margin="0,6,0,10">
                 <Button x:Name="BuildButton" Content="ساخت/به‌روزرسانی مدل" MinWidth="160" Click="OnBuildClick"/>

@@ -140,9 +140,10 @@ public partial class DesignView : UserControl
             ValidationSummaryText.Text = "وضعیت: در حال ساخت هندسه…";
             BuildButton.IsEnabled = false;
 
-            // ساخت در پس‌زمینه — رشتهٔ UI آزاد می‌ماند (GEO-09).
+            // ساخت در پس‌زمینه — رشتهٔ UI آزاد می‌ماند (GEO-09)؛ کیفیت ساخت از فرم (گام ۰٫۴٫۰).
+            var buildQuality = ParseBuildQuality();
             var mesh = await System.Threading.Tasks.Task.Run(() =>
-                PartMeshFactory.Build(document, MeshQualityPreset.Balanced));
+                PartMeshFactory.Build(document, buildQuality));
 
             // پاسخ قدیمی کنار گذاشته می‌شود (کاربر دوباره کلیک کرده).
             if (ticket != _buildTicket) return;
@@ -185,9 +186,22 @@ public partial class DesignView : UserControl
         StartsBox.Text = "1";
         HandednessBox.SelectedIndex = 0;
         ModelingModeBox.SelectedIndex = 0;
+        // پیش‌فرض کیفیت ساخت «دقیق» (اندیس ۲ — گام ۰٫۴٫۰).
+        if (BuildQualityBox is not null && BuildQualityBox.Items.Count > 2)
+            BuildQualityBox.SelectedIndex = 2;
         // به‌جای فراخوانی مستقیم رخدادگردان با آرگومان null، منطق مشترک صدا زده می‌شود (بازبینی ۰٫۲٫۰، D9).
         ApplyCatalogDefaults();
     }
+
+    /// <summary>کیفیت ساخت مدل از فرم — پیش‌فرض «دقیق» (۱۹۲ بخش زاویه‌ای، گام ۰٫۴٫۰).</summary>
+    private MeshQualityPreset ParseBuildQuality() =>
+        ((ComboBoxItem)BuildQualityBox?.SelectedItem)?.Tag as string switch
+        {
+            "Draft" => MeshQualityPreset.Draft,
+            "Balanced" => MeshQualityPreset.Balanced,
+            "VeryFine" => MeshQualityPreset.VeryFine,
+            _ => MeshQualityPreset.Fine,
+        };
 
     /// <summary>ساخت سند پروژه از روی فرم — با پارسر عددی امن (ارقام فارسی/اعشار فارسی).</summary>
     private ProjectDocument? BuildDocumentFromForm()
