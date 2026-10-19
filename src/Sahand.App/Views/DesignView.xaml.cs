@@ -41,10 +41,11 @@ public partial class DesignView : UserControl
 
     private string SelectedKind => ((ComboBoxItem)PartKindBox.SelectedItem)?.Tag as string ?? "Bolt";
 
-    /// <summary>خانوادهٔ رزوهٔ انتخاب‌شده (متریک/اینچی) — منبع فهرست اندازه‌ها.</summary>
-    private ThreadFamily SelectedFamily => ((ComboBoxItem)FamilyBox.SelectedItem)?.Tag as string == "Unified"
-        ? ThreadFamily.Unified
-        : ThreadFamily.IsoMetric;
+    /// <summary>خانوادهٔ رزوهٔ انتخاب‌شده — منبع فهرست اندازه‌ها (تجزیهٔ عمومی هر هفت خانواده، گسترش ۰٫۳٫۰).</summary>
+    private ThreadFamily SelectedFamily =>
+        Enum.TryParse<ThreadFamily>(((ComboBoxItem)FamilyBox.SelectedItem)?.Tag as string, out var family)
+            ? family
+            : ThreadFamily.IsoMetric;
 
     /// <summary>پرکردن فهرست اندازه‌های کاتالوگ خانوادهٔ انتخابی با یادداشت منبع.</summary>
     private void RefreshSizes()
@@ -208,6 +209,11 @@ public partial class DesignView : UserControl
             ? ThreadModelingMode.Simplified
             : ThreadModelingMode.RealHelical;
 
+        // نیم‌زاویهٔ پروفیل از خانوادهٔ انتخابی (منبع واحد Core — گسترش ۰٫۳٫۰).
+        var halfAngle = ThreadProfileFactory.FamilyHalfAngleDegrees(SelectedFamily);
+        // مخروط استاندارد NPT از کاتالوگ — برای بقیهٔ خانواده‌ها موازی است.
+        var taper = SelectedFamily == ThreadFamily.Npt ? ThreadCatalog.NptTaperDegrees : 0.0;
+
         var acrossFlats = ParseNumber(AcrossFlatsBox.Text, "عرض آچارخور") ?? diameter * 1.55;
         var headHeight = ParseNumber(HeadHeightBox.Text, "ارتفاع سر") ?? diameter * 0.65;
         var headDiameter = ParseNumber(HeadDiameterBox.Text, "قطر سر") ?? diameter * 1.55;
@@ -231,7 +237,8 @@ public partial class DesignView : UserControl
             Handedness = handedness,
             ThreadLengthMm = threadRunout ?? length,
             ModelingMode = modeling,
-            HalfAngleDegrees = 30,
+            HalfAngleDegrees = halfAngle,
+            TaperDegrees = taper,
             StandardId = catalogEntry is null ? null : $"CAT-{catalogEntry.SizeLabel}-{catalogEntry.Series}",
             DataSourceNote = sourceNote ?? "ابعاد ورودی کاربر — استاندارد نیست",
         };
@@ -261,6 +268,8 @@ public partial class DesignView : UserControl
                         SlotDepthMm = drive is DriveStyle.Slot or DriveStyle.Phillips ? slotDepth : null,
                         HexSocketAcrossFlatsMm = drive == DriveStyle.HexSocket ? diameter * 0.55 : null,
                         HexSocketDepthMm = drive == DriveStyle.HexSocket ? diameter * 0.35 : null,
+                        TorxAcrossLobesMm = drive == DriveStyle.Torx ? diameter * 0.65 : null,
+                        TorxDepthMm = drive == DriveStyle.Torx ? diameter * 0.32 : null,
                         ThreadRunoutFromTipMm = threadRunout,
                         TipChamferMm = pitch * 0.6,
                     },
@@ -314,6 +323,8 @@ public partial class DesignView : UserControl
                             HeadHeightMm = headHeight,
                             HeadAcrossFlatsMm = head == HeadStyle.Hex ? acrossFlats : null,
                             HeadDiameterMm = head is HeadStyle.SocketCap or HeadStyle.Pan or HeadStyle.FlatCountersunk ? headDiameter : null,
+                            TorxAcrossLobesMm = drive == DriveStyle.Torx ? diameter * 0.65 : null,
+                            TorxDepthMm = drive == DriveStyle.Torx ? diameter * 0.32 : null,
                             TipChamferMm = pitch * 0.6,
                         },
                         Nut = new NutSpec
