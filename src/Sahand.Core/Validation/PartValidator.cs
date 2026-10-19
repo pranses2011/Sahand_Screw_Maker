@@ -68,6 +68,36 @@ public static class PartValidator
                     "حفرهٔ آلن از قطر سر بزرگ‌تر می‌شود؛ قطر حفره یا قطر سر را اصلاح کنید.");
         }
 
+        // محرک تورکس (گسترش ۰٫۳٫۰) — همان خانوادهٔ سرهای حفره‌پذیرِ آلن.
+        if (bolt.Drive == DriveStyle.Torx)
+        {
+            if (bolt.Head is not (HeadStyle.SocketCap or HeadStyle.Hex))
+                result.AddError("Drive",
+                    $"حفرهٔ تورکس روی سر «{bolt.Head}» در این نسخه پشتیبانی نمی‌شود؛ سر استوانه‌ای آلن یا شش‌گوش را انتخاب کنید.");
+
+            if (bolt.TorxAcrossLobesMm is not > 0)
+                result.AddError("TorxAcrossLobesMm", "قطر اسمی تورکس (روی پَرها) باید مثبت باشد.");
+
+            if (bolt.TorxDepthMm is not > 0)
+                result.AddError("TorxDepthMm", "عمق حفرهٔ تورکس باید مثبت باشد.");
+            else if (bolt.TorxDepthMm >= bolt.HeadHeightMm)
+                result.AddError("TorxDepthMm",
+                    $"عمق حفرهٔ تورکس ({bolt.TorxDepthMm:0.###}mm) نباید از ارتفاع سر ({bolt.HeadHeightMm:0.###}mm) بیشتر یا مساوی شود؛ دیوارهٔ ته‌حفره صفر می‌شود.");
+            else if (bolt.TorxDepthMm > bolt.HeadHeightMm * 0.8)
+                result.AddWarning("TorxDepthMm",
+                    "عمق حفرهٔ تورکس بیش از ۸۰٪ ارتفاع سر است؛ دیوارهٔ ته‌حفره نازک می‌شود.");
+
+            if (bolt.TorxAcrossLobesMm is > 0 && bolt.HeadDiameterMm is > 0 &&
+                bolt.TorxAcrossLobesMm >= bolt.HeadDiameterMm * 0.9)
+                result.AddError("TorxAcrossLobesMm",
+                    "حفرهٔ تورکس از مرز سر بزرگ می‌شود؛ قطر تورکس یا قطر سر را اصلاح کنید.");
+
+            if (bolt.TorxAcrossLobesMm is > 0 && bolt.Head == HeadStyle.Hex &&
+                bolt.HeadAcrossFlatsMm is > 0 && bolt.TorxAcrossLobesMm >= bolt.HeadAcrossFlatsMm * 0.9)
+                result.AddError("TorxAcrossLobesMm",
+                    "حفرهٔ تورکس از مرز تخت‌های سر شش‌گوش بزرگ می‌شود؛ قطر تورکس یا عرض آچارخور را اصلاح کنید.");
+        }
+
         if (bolt.Drive is DriveStyle.Slot or DriveStyle.Phillips)
         {
             if (bolt.SlotWidthMm is not > 0)
