@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/assets/logo.png" width="150" alt="لوگوی طراح پیچ و مهره سهند">
+  <img src="docs/assets/ScrewIcon.png" width="130" alt="آیکون رسمی طراح پیچ و مهره سهند">
 </p>
 
 <h1 align="center">طراح پیچ و مهره سهند</h1>
@@ -10,8 +10,8 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/pranses2011/Sahand_Screw_Maker/releases/tag/v0.1.0"><img src="docs/assets/badges/badge-version.svg" alt="نسخه"></a>
-  <a href="https://github.com/pranses2011/Sahand_Screw_Maker/releases/tag/v0.1.0"><img src="docs/assets/badges/badge-tests.svg" alt="آزمون‌ها"></a>
+  <a href="https://github.com/pranses2011/Sahand_Screw_Maker/releases/tag/v0.2.0"><img src="docs/assets/badges/badge-version.svg" alt="نسخه"></a>
+  <a href="https://github.com/pranses2011/Sahand_Screw_Maker/releases/tag/v0.2.0"><img src="docs/assets/badges/badge-tests.svg" alt="آزمون‌ها"></a>
   <img src="docs/assets/badges/badge-build.svg" alt="بیلد">
   <img src="docs/assets/badges/badge-platform.svg" alt="پلتفرم">
   <img src="docs/assets/badges/badge-offline.svg" alt="آفلاین">
@@ -20,7 +20,7 @@
 </p>
 
 <p align="center">
-  ⬇️ <a href="https://github.com/pranses2011/Sahand_Screw_Maker/releases/tag/v0.1.0"><strong>دانلود نسخهٔ ۰٫۱٫۰ — بستهٔ آفلاین ویندوز</strong></a>
+  ⬇️ <a href="https://github.com/pranses2011/Sahand_Screw_Maker/releases/tag/v0.2.0"><strong>دانلود نسخهٔ ۰٫۲٫۰ — بستهٔ آفلاین ویندوز (رفع کرش‌های بحرانی)</strong></a>
 </p>
 
 <hr>
@@ -31,6 +31,18 @@
 
 **«طراح پیچ و مهره سهند»** یک نرم‌افزار دسکتاپ مهندسی برای طراحی **پارامتریک** پیچ، مهره، واشر و میلهٔ رزوه‌دار با **رزوهٔ واقعی مارپیچ** (نه نمایشی) است؛ خروجی‌های آمادهٔ اسلایسر، نسخهٔ چاپی با جبران قابل تنظیم و ابزار خط فرمان برای اتوماسیون — همه **بدون اینترنت، بدون تله‌متری و بدون وابستگی زمانِ اجرا**.
 
+### 🆕 تازه‌های نسخهٔ ۰٫۲٫۰
+
+| | تغییر |
+|---|---|
+| 🛠️ | **رفع کرش صفحهٔ «طراحی قطعه»** (گزارش‌شده روی ویندوز): ریشهٔ خطا با بازبینی کامل شناسایی و رفع شد — رخداد زودهنگام XAML هنگام بارگذاری نما |
+| 🛠️ | **رفع کرش صفحهٔ «پیش‌نمایش سه‌بعدی»** با همان الگو |
+| 🛡️ | **رصد خطای سراسری**: خطاهای غیرمنتظره مهار می‌شوند، برنامه باز می‌ماند و اثر خطا در `logs/crash-log.txt` می‌ماند |
+| 🧵 | **انتخاب خانوادهٔ رزوهٔ متریک ISO / اینچی UNC** از رابط طراحی (کاتالوگ ASME B1.1 در دسترس UI) |
+| 🎨 | **آیکون رسمی برنامه** (`ScrewIcon`) برای EXE و پنجره + نمایش نسخه در عنوان پنجره |
+
+جمع‌بندی کامل: [docs/CHANGELOG-FA.md](docs/CHANGELOG-FA.md) · ریشه‌یابی کامل کرش: [analysis/01-AUDIT-AND-IMPROVEMENTS-FA.md](analysis/01-AUDIT-AND-IMPROVEMENTS-FA.md)
+
 <p align="center">
   <img src="docs/assets/renders/hero-family.jpg" width="880" alt="خانوادهٔ قطعات — رندر مش واقعی تولیدشده توسط خود نرم‌افزار">
 </p>
@@ -39,17 +51,19 @@
 
 ---
 
-## 📦 دانلود و نصب (نسخهٔ ۰٫۱٫۰)
+## 📦 دانلود و نصب (نسخهٔ ۰٫۲٫۰)
 
 هر دو بستهٔ ویندوز **خودکفایند** — نیازی به نصب .NET یا اتصال اینترنت ندارند:
 
 | بسته | کاربرد | اندازه |
 |---|---|---|
-| [`SahandScrewMaker-Setup-0.1.0.exe`](https://github.com/pranses2011/Sahand_Screw_Maker/releases/download/v0.1.0/SahandScrewMaker-Setup-0.1.0.exe) | نصب‌کننده با **رابط فارسی/راست‌چین** (NSIS)؛ میانبر، مستندات، نمونه‌ها و حذف‌کنندهٔ ویندوزی | ~۴۸ MB |
-| [`SahandScrewMaker-0.1.0-win-x64-Portable.zip`](https://github.com/pranses2011/Sahand_Screw_Maker/releases/download/v0.1.0/SahandScrewMaker-0.1.0-win-x64-Portable.zip) | نسخهٔ پرتابل: استخراج و اجرا؛ برنامه + CLI + مستندات + نمونه‌ها | ~۹۹ MB |
-| [`ssnd-cli-0.1.0-linux-x64.tar.gz`](https://github.com/pranses2011/Sahand_Screw_Maker/releases/download/v0.1.0/ssnd-cli-0.1.0-linux-x64.tar.gz) | ابزار خط فرمان لینوکس (روی همین محیط واقعاً اجرا و آزمون شد) | ~۳۱ MB |
+| [`SahandScrewMaker-Setup-0.2.0.exe`](https://github.com/pranses2011/Sahand_Screw_Maker/releases/download/v0.2.0/SahandScrewMaker-Setup-0.2.0.exe) | نصب‌کننده با **رابط فارسی/راست‌چین** (NSIS)؛ میانبر، مستندات، نمونه‌ها و حذف‌کنندهٔ ویندوزی | ~۴۸ MB |
+| [`SahandScrewMaker-0.2.0-win-x64-Portable.zip`](https://github.com/pranses2011/Sahand_Screw_Maker/releases/download/v0.2.0/SahandScrewMaker-0.2.0-win-x64-Portable.zip) | نسخهٔ پرتابل: استخراج و اجرا؛ برنامه + CLI + مستندات + نمونه‌ها | ~۹۹ MB |
+| [`ssnd-cli-0.2.0-linux-x64.tar.gz`](https://github.com/pranses2011/Sahand_Screw_Maker/releases/download/v0.2.0/ssnd-cli-0.2.0-linux-x64.tar.gz) | ابزار خط فرمان لینوکس (روی همین محیط واقعاً اجرا و آزمون شد) | ~۳۱ MB |
 
-> 🔐 جمع‌آزما (SHA-256) همهٔ بسته‌ها در [`SHA256SUMS.txt`](https://github.com/pranses2011/Sahand_Screw_Maker/releases/download/v0.1.0/SHA256SUMS.txt) پیوست رلیز است.
+> 🔐 جمع‌آزما (SHA-256) همهٔ بسته‌ها در [`SHA256SUMS.txt`](https://github.com/pranses2011/Sahand_Screw_Maker/releases/download/v0.2.0/SHA256SUMS.txt) پیوست رلیز است.
+>
+> 🛡️ **اگر از ۰٫۱٫۰ می‌آیید:** کرش هنگام کلیک روی «طراحی قطعه»/«پیش‌نمایش سه‌بعدی» در این نسخه رفع شده است — به‌روزرسانی به ۰٫۲٫۰ راجدارید.
 >
 > ⚠️ **صداقت مهندسی:** بیلد و آزمون خودکار روی Linux انجام شده (۱۱۳ آزمون سبز)؛ **اجرای بصری برنامهٔ WPF و فرایند نصب باید روی ویندوز واقعی توسط شما تأیید شود.**
 
@@ -79,15 +93,19 @@
 
 <p align="center"><sub>🔬 نمای نزدیک رزوهٔ مارپیچ M6 با کیفیت VeryFine — عمق/زاویهٔ پروفیل ۶۰°، ریشه و نوک گردشده</sub></p>
 
-### 🪟 رابط کاربری فارسی راست‌چین
+### 🪟 رابط کاربری فارسی راست‌چین — هر هفت صفحه
 
-تصاویر این بخش، **بازتولید وفادار از قالب‌های XAML واقعی برنامه** است (همان تم، پالت رنگ، فونت وزیرمتن و آیکون‌های اصلی)؛ زیرا توسعه روی Linux انجام شده و پنجرهٔ WPF در آن اجرا نمی‌شود. در نمای سه‌بعدی، **مش واقعی** پیچ M6 بارگذاری شده است.
+تصاویر این بخش، **بازتولید وفادار از قالب‌های XAML واقعی برنامهٔ ۰٫۲٫۰** است (همان تم، پالت رنگ، فونت وزیرمتن، آیکون‌ها و متن‌های واقعی)؛ زیرا توسعه روی Linux انجام شده و پنجرهٔ WPF در آن اجرا نمی‌شود. در نمای سه‌بعدی، **مش واقعی** پیچ M6 (۹۷٬۵۳۶ وجه، تولیدشده با خود CLI) بارگذاری شده است.
 
 | صفحه | تصویر |
 |---|---|
-| خانه — شروع سریع، نمونه‌ها و گردش‌کار | <img src="docs/assets/ui/home.png" width="860"> |
-| طراحی قطعه — فرم پارامتریک با اعتبارسنجی | <img src="docs/assets/ui/design.png" width="860"> |
-| پیش‌نمایش سه‌بعدی — مش واقعی + خلاصهٔ مهندسی | <img src="docs/assets/ui/preview.png" width="860"> |
+| 🏠 خانه — شروع سریع، نمونه‌ها و گردش‌کار | <img src="docs/assets/ui/home.png" width="860"> |
+| 📐 طراحی قطعه — فرم پارامتریک با **خانوادهٔ رزوهٔ ISO/UNC** (جدید ۰٫۲٫۰) | <img src="docs/assets/ui/design.png" width="860"> |
+| 🧊 پیش‌نمایش سه‌بعدی — مش واقعی + اعتبارسنجی هندسی | <img src="docs/assets/ui/preview.png" width="860"> |
+| 🖨️ آماده‌سازی چاپ — پروفایل فرایند + جدول تفاوت | <img src="docs/assets/ui/print.png" width="860"> |
+| 📤 خروجی — ماتریس صادقانهٔ فرمت‌ها | <img src="docs/assets/ui/export.png" width="860"> |
+| ⚙️ تنظیمات و گزارش — صف محلی، SMTP، DPAPI | <img src="docs/assets/ui/settings.png" width="860"> |
+| ℹ️ درباره و حمایت — شناسنامه و کارت پوشیده | <img src="docs/assets/ui/about.png" width="860"> |
 
 ---
 
@@ -231,7 +249,7 @@ Sahand_Screw_Maker/
 - [x] هستهٔ پارامتریک + رزوهٔ مارپیچ واقعی
 - [x] ۶ فرمت خروجی + آزمون رفت‌وبرگشت
 - [x] نسخهٔ چاپی + کوپن آزمون + CLI
-- [x] رلیز آفلاین ویندوز (نسخهٔ ۰٫۱٫۰)
+- [x] رلیز آفلاین ویندوز (۰٫۱٫۰) + رفع کرش‌ها و رصد خطای سراسری (۰٫۲٫۰)
 - [ ] تأیید بصری ویندوز توسط کارفرما
 - [ ] کاتالوگ کامل‌تر: Whitworth، NPT، BSPP، ACME
 - [ ] Torx و محرک‌های امنیتی + سرهای خاص
@@ -245,7 +263,8 @@ Sahand_Screw_Maker/
 |---|---|
 | [راهنمای کاربر](docs/USER-GUIDE-FA.md) | گردش‌کار طراحی، رزوه، خروجی، چاپ، ایمیل و عیب‌یابی |
 | [راهنمای ساخت](docs/BUILD-FA.md) | ساختار راه‌حل، وابستگی‌ها، publish ویندوز |
-| [تاریخچهٔ تغییرات](docs/CHANGELOG-FA.md) | تغییرات نسخه‌ها |
+| [تاریخچهٔ تغییرات](docs/CHANGELOG-FA.md) | تغییرات نسخه‌ها (۰٫۱٫۰ و ۰٫۲٫۰) |
+| [گزارش بازبینی ۰٫۲٫۰](analysis/01-AUDIT-AND-IMPROVEMENTS-FA.md) | ریشه‌یابی کرش‌ها، فهرست نواقص و برنامهٔ بهبود |
 | [راهنمای توسعه‌دهنده](docs/DEVELOPER-FA.md) | معماری لایه‌ای، مدل ریاضی رزوه، قانون کامنت |
 | [ماتریس فرمت‌ها](docs/FORMATS-AND-STATUS-FA.md) | وضعیت صادقانهٔ هر فرمت خروجی |
 | [گزارش آزمون](docs/TEST-REPORT-FA.md) | ۱۱۳ آزمون، پوشش ماتریس پذیرش، محدودیت‌ها |
@@ -254,11 +273,11 @@ Sahand_Screw_Maker/
 
 ---
 
-## ⚠️ محدودیت‌های صادقانهٔ نسخهٔ ۰٫۱٫۰
+## ⚠️ محدودیت‌های صادقانهٔ نسخهٔ ۰٫۲٫۰
 
-- **اجرای بصری WPF** روی ویندوز واقعی باید تأیید شود (توسعه روی Linux، بیلد سبز؛ تصاویر رابط، بازتولید وفادار قالب‌های XAML‌اند).
+- **اجرای بصری WPF** روی ویندوز واقعی باید تأیید شود (توسعه روی Linux، بیلد سبز؛ تصاویر رابط، بازتولید وفادار قالب‌های XAML‌اند). کرش‌های گزارش‌شدهٔ ۰٫۱٫۰ با ریشهٔ مشخص رفع شده‌اند و در صورت مشاهدهٔ خطای جدید، فایل `crash-log.txt` (پوشهٔ دادهٔ برنامه) اثر ماندگار دارد.
 - **نصب‌کنندهٔ NSIS** روی Linux کامپایل شده؛ فرایند نصب روی ویندوز باید آزموده شود.
-- کاتالوگ دادهٔ آماده فقط **ISO متریک و UNC** است؛ خانواده‌های دیگر پروفیل بدون کاتالوگ دارند.
+- کاتالوگ دادهٔ آماده فقط **ISO متریک و UNC** است (هر دو از UI در دسترس‌اند)؛ خانواده‌های دیگر پروفیل بدون کاتالوگ دارند.
 - شیار روی سر شش‌گوش/خزینه و Torx/محرک امنیتی در **برنامهٔ توسعه**اند و در اعتبارسنجی صادقانه رد می‌شوند.
 - تقاطع خودی مش «هیوریستیکی» است (کشف قطعی تضمین‌نشده) — در کد مستند شده.
 
