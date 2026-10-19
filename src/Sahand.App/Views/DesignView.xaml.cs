@@ -32,6 +32,9 @@ public partial class DesignView : UserControl
     {
         InitializeComponent();
         _owner = owner;
+        // وضعیت قطعی پس از بارگذاری کامل XAML — رخداد زودهنگام SelectionChanged
+        // در حین InitializeComponent کنار گذاشته می‌شود و اینجا دوباره اعمال می‌شود (رفع کرش ۰٫۲٫۰).
+        UpdateHeadGroupState();
         // اتصال در XAML (ItemsSource روی ItemsControl) پس از InitializeComponent معتبر است.
         Loaded += (_, _) => RefreshSizes();
     }
@@ -57,7 +60,15 @@ public partial class DesignView : UserControl
 
     private void OnPartKindChanged(object sender, SelectionChangedEventArgs e)
     {
-        // فیلدهای سر فقط برای پیچ معنا دارند.
+        // در حین InitializeComponent آیتم «پیچ/بولت» IsSelected دارد و رخداد پیش از ساخت
+        // عناصر بعدی XAML (مثل HeadGroup) می‌گیرد — بدون این گارد، کرش برنامه (بازبینی ۰٫۲٫۰، D1).
+        if (HeadGroup is null) return;
+        UpdateHeadGroupState();
+    }
+
+    /// <summary>فیلدهای سر فقط برای پیچ/مجموعه معنا دارند.</summary>
+    private void UpdateHeadGroupState()
+    {
         var isBolt = SelectedKind is "Bolt" or "Assembly";
         HeadGroup.IsEnabled = isBolt;
         HeadGroup.Opacity = isBolt ? 1.0 : 0.45;
@@ -65,16 +76,26 @@ public partial class DesignView : UserControl
 
     private void OnSizeChanged(object sender, SelectionChangedEventArgs e)
     {
-        if (SizeBox.SelectedItem is ComboBoxItem { Tag: CatalogEntry entry })
-        {
-            SourceNoteText.Text = entry.SourceNote;
-            // مقادیر پیش‌فرض هوشمند بر اساس کاتالوگ.
-            DiameterBox.Text = entry.NominalDiameterMm.ToString("0.###");
-            PitchBox.Text = entry.PitchMm.ToString("0.###");
-            AcrossFlatsBox.Text = (entry.NominalDiameterMm * 1.55).ToString("0.###");
-            HeadHeightBox.Text = (entry.NominalDiameterMm * 0.65).ToString("0.###");
-            HeadDiameterBox.Text = (entry.NominalDiameterMm * 1.55).ToString("0.###");
-        }
+        // رخداد زودهنگام در حین InitializeComponent ممکن است؛ فیلدها هنوز ساخته نشده‌اند.
+        if (SourceNoteText is null || DiameterBox is null) return;
+        ApplyCatalogDefaults();
+    }
+
+    /// <summary>
+    /// مقادیر پیش‌فرض هوشمند بر اساس مدخل کاتالوگ — با قالب عددی ثابت (InvariantCulture)
+    /// تا روی ویندوزهای با منطقهٔ فارسی ممیز اعشار «/» یا «٫» درج نشود (بازبینی ۰٫۲٫۰، D4).
+    /// </summary>
+    private void ApplyCatalogDefaults()
+    {
+        if (SizeBox.SelectedItem is not ComboBoxItem { Tag: CatalogEntry entry }) return;
+
+        SourceNoteText.Text = entry.SourceNote;
+        var inv = System.Globalization.CultureInfo.InvariantCulture;
+        DiameterBox.Text = entry.NominalDiameterMm.ToString("0.###", inv);
+        PitchBox.Text = entry.PitchMm.ToString("0.###", inv);
+        AcrossFlatsBox.Text = (entry.NominalDiameterMm * 1.55).ToString("0.###", inv);
+        HeadHeightBox.Text = (entry.NominalDiameterMm * 0.65).ToString("0.###", inv);
+        HeadDiameterBox.Text = (entry.NominalDiameterMm * 1.55).ToString("0.###", inv);
     }
 
     private async void OnBuildClick(object sender, RoutedEventArgs e)
@@ -148,7 +169,8 @@ public partial class DesignView : UserControl
         StartsBox.Text = "1";
         HandednessBox.SelectedIndex = 0;
         ModelingModeBox.SelectedIndex = 0;
-        OnSizeChanged(this, null!);
+        // به‌جای فراخوانی مستقیم رخدادگردان با آرگومان null، منطق مشترک صدا زده می‌شود (بازبینی ۰٫۲٫۰، D9).
+        ApplyCatalogDefaults();
     }
 
     /// <summary>ساخت سند پروژه از روی فرم — با پارسر عددی امن (ارقام فارسی/اعشار فارسی).</summary>
