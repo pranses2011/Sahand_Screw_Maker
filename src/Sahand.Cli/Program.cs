@@ -88,10 +88,11 @@ public static class Program
             دستورها:
               generate  ساخت قطعه و ذخیرهٔ پروژهٔ ssnd (+ خروجی اختیاری مش)
                         --part bolt|nut|washer|rod|assembly   (پیش‌فرض bolt)
-                        --size M6|1/4-20|…                    (از کاتالوگ)
+                        --size M6|1/4-20|1/4-20 BSW|1/2-14 NPT|G1/2-14|Tr20×4|… (همهٔ خانواده‌ها)
                         --length mm --diameter mm --pitch mm
                         --head Hex|SocketCap|FlatCountersunk|Pan
-                        --drive None|HexSocket|Slot|Phillips
+                        --drive None|HexSocket|Torx|Slot|Phillips
+                        --torx mm --torx-depth mm  (محرک تورکس)
                         --across-flats mm --head-height mm --height mm
                         --thread mm (طول رزوه) --left (چپ‌گرد) --simplified (بدون رزوهٔ واقعی)
                         --quality draft|balanced|fine|veryfine
@@ -101,7 +102,7 @@ public static class Program
                         --in مسیر.ssnd --format STL|OBJ|PLY|3MF|GLB --out مسیر
                         --quality …   --ascii
               validate  اعتبارسنجی فایل پروژه:  --in مسیر.ssnd
-              catalog   فهرست کاتالوگ رزوه:      --family metric|unc
+              catalog   فهرست کاتالوگ رزوه:      --family metric|unc|unf|bsw|npt|bsp|tr|acme
               coupon    نمونهٔ آزمون رزوهٔ کوتاه: --size M6 --export STL --out مسیر
               version   نسخه و وضعیت موتور
 

@@ -168,7 +168,12 @@ public static class Commands
         var family = args.GetValueOrDefault("--family", "metric").ToLowerInvariant() switch
         {
             "metric" or "iso" => ThreadFamily.IsoMetric,
-            "unc" or "unified" => ThreadFamily.Unified,
+            "unc" or "unf" or "unified" => ThreadFamily.Unified,
+            "bsw" or "bsf" or "whitworth" => ThreadFamily.Whitworth,
+            "npt" => ThreadFamily.Npt,
+            "bsp" or "bspp" => ThreadFamily.Bsp,
+            "tr" or "trapezoidal" => ThreadFamily.IsoTrapezoidal,
+            "acme" => ThreadFamily.Acme,
             _ => ThreadFamily.IsoMetric,
         };
 
@@ -186,8 +191,7 @@ public static class Commands
     public static int Coupon(Dictionary<string, string> args)
     {
         var sizeLabel = args.GetValueOrDefault("--size", "M6");
-        var spec = ThreadCatalog.BuildSpec(ThreadFamily.IsoMetric, sizeLabel, ThreadKind.External)
-            ?? ThreadCatalog.BuildSpec(ThreadFamily.Unified, sizeLabel, ThreadKind.External);
+        var spec = ThreadCatalog.FindInAnyFamily(sizeLabel, ThreadKind.External);
 
         if (spec is null)
             return Fail($"اندازهٔ «{sizeLabel}» در کاتالوگ نیست؛ دستور catalog را ببینید.");
@@ -241,11 +245,10 @@ public static class Commands
     private static ProjectDocument? BuildBoltDocument(Dictionary<string, string> args)
     {
         var size = args.GetValueOrDefault("--size", "M6");
-        var spec = ThreadCatalog.BuildSpec(ThreadFamily.IsoMetric, size, ThreadKind.External)
-            ?? ThreadCatalog.BuildSpec(ThreadFamily.Unified, size, ThreadKind.External);
+        var spec = ThreadCatalog.FindInAnyFamily(size, ThreadKind.External);
         if (spec is null)
         {
-            Fail($"اندازهٔ «{size}» در کاتالوگ نیست.");
+            Fail($"اندازهٔ «{size}» در هیچ خانوادهٔ کاتالوگی نیست؛ دستور catalog را ببینید.");
             return null;
         }
 
@@ -287,6 +290,12 @@ public static class Commands
             HexSocketDepthMm = drive == DriveStyle.HexSocket
                 ? ParseDouble(args, "--socket-depth", diameter * 0.35)
                 : null,
+            TorxAcrossLobesMm = drive == DriveStyle.Torx
+                ? ParseDouble(args, "--torx", diameter * 0.65)
+                : null,
+            TorxDepthMm = drive == DriveStyle.Torx
+                ? ParseDouble(args, "--torx-depth", diameter * 0.32)
+                : null,
             SlotWidthMm = drive is DriveStyle.Slot or DriveStyle.Phillips
                 ? ParseDouble(args, "--slot-width", diameter * 0.18)
                 : null,
@@ -302,11 +311,10 @@ public static class Commands
     private static ProjectDocument? BuildNutDocument(Dictionary<string, string> args)
     {
         var size = args.GetValueOrDefault("--size", "M6");
-        var spec = ThreadCatalog.BuildSpec(ThreadFamily.IsoMetric, size, ThreadKind.Internal)
-            ?? ThreadCatalog.BuildSpec(ThreadFamily.Unified, size, ThreadKind.Internal);
+        var spec = ThreadCatalog.FindInAnyFamily(size, ThreadKind.Internal);
         if (spec is null)
         {
-            Fail($"اندازهٔ «{size}» در کاتالوگ نیست.");
+            Fail($"اندازهٔ «{size}» در هیچ خانوادهٔ کاتالوگی نیست؛ دستور catalog را ببینید.");
             return null;
         }
 
@@ -346,10 +354,10 @@ public static class Commands
     private static ProjectDocument? BuildRodDocument(Dictionary<string, string> args)
     {
         var size = args.GetValueOrDefault("--size", "M6");
-        var spec = ThreadCatalog.BuildSpec(ThreadFamily.IsoMetric, size, ThreadKind.External);
+        var spec = ThreadCatalog.FindInAnyFamily(size, ThreadKind.External);
         if (spec is null)
         {
-            Fail($"اندازهٔ «{size}» در کاتالوگ نیست.");
+            Fail($"اندازهٔ «{size}» در هیچ خانوادهٔ کاتالوگی نیست؛ دستور catalog را ببینید.");
             return null;
         }
 

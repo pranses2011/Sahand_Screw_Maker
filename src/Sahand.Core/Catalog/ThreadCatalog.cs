@@ -307,6 +307,36 @@ public static class ThreadCatalog
     };
 
     /// <summary>
+    /// برچسب اندازه را در همهٔ خانواده‌های کاتالوگ‌دار جستجو می‌کند و نخستین spec را می‌سازد.
+    /// </summary>
+    /// <param name="sizeLabel">برچسب اندازه (مثل «M6» یا «1/4-20 BSW»).</param>
+    /// <param name="kind">نوع رزوه.</param>
+    /// <returns>spec خانوادهٔ یافت‌شده؛ null اگر در هیچ خانواده‌ای نبود.</returns>
+    /// <remarks>کاربرد اصلی: CLI که بدون انتخاب صریح خانواده، اندازه می‌گیرد. خانواده‌های کاتالوگ‌دار به‌ترتیب ثابت جستجو می‌شوند.</remarks>
+    public static ThreadSpec? FindInAnyFamily(string sizeLabel, ThreadKind kind)
+    {
+        foreach (var family in CatalogFamilies)
+        {
+            var spec = BuildSpec(family, sizeLabel, kind);
+            if (spec is not null) return spec;
+        }
+
+        return null;
+    }
+
+    /// <summary>خانواده‌های دارای دادهٔ کاتالوگ — به‌ترتیب جستجوی FindInAnyFamily.</summary>
+    public static IReadOnlyList<ThreadFamily> CatalogFamilies { get; } =
+    [
+        ThreadFamily.IsoMetric,
+        ThreadFamily.Unified,
+        ThreadFamily.Whitworth,
+        ThreadFamily.Npt,
+        ThreadFamily.Bsp,
+        ThreadFamily.IsoTrapezoidal,
+        ThreadFamily.Acme,
+    ];
+
+    /// <summary>
     /// از روی برچسب اندازه و خانواده، مشخصات رزوهٔ خارجی می‌سازد.
     /// </summary>
     /// <returns>مشخصات آمادهٔ ساخت؛ null اگر مدخل یافت نشد.</returns>
