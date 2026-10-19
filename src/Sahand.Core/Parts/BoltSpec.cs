@@ -58,6 +58,10 @@ public sealed record BoltSpec
     /// <summary>عمق حفرهٔ تورکس برحسب میلی‌متر.</summary>
     public double? TorxDepthMm { get; init; }
 
+    /// <summary>قطر پین مرکزی محرک امنیتی برحسب میلی‌متر — فقط برای <see cref="DriveStyle.PinHex"/> و <see cref="DriveStyle.SecurityTorx"/> (گسترش ۰٫۴٫۰).</summary>
+    /// <remarks>پین از کف حفره بیرون می‌زند و آچار معمولی را قفل می‌کند؛ ابزار مخصوصِ گوددار لازم است.</remarks>
+    public double? SecurityPinDiameterMm { get; init; }
+
     /// <summary>پهنای شیار تخت/صلیبی برحسب میلی‌متر — فقط برای محرک شیاری.</summary>
     public double? SlotWidthMm { get; init; }
 
@@ -73,6 +77,13 @@ public sealed record BoltSpec
 
     /// <summary>پخ لبهٔ بالای سر شش‌گوش برحسب میلی‌متر (تقریب مخروطی فرز فوقانی).</summary>
     public double HeadTopChamferMm { get; init; }
+
+    /// <summary>قطر دیسک فلنج برحسب میلی‌متر — فقط برای <see cref="HeadStyle.Flange"/> (گسترش ۰٫۴٫۰).</summary>
+    /// <remarks>باید از عرض آچارخور سر بزرگ‌تر باشد؛ سطح اتکای وسیع‌تر برای مواد نرم.</remarks>
+    public double? FlangeDiameterMm { get; init; }
+
+    /// <summary>ضخامت دیسک فلنج برحسب میلی‌متر (پایهٔ مخروطی به شش‌گوش).</summary>
+    public double? FlangeThicknessMm { get; init; }
 
     /// <summary>طول کلی قطعه شامل ارتفاع سر.</summary>
     public double TotalLengthMm => LengthUnderHeadMm + HeadHeightMm;
