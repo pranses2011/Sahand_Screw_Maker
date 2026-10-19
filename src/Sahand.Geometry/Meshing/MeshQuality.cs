@@ -21,6 +21,12 @@ public enum MeshQualityPreset
 
     /// <summary>بسیار دقیق — فایل و زمان ساخت سنگین؛ پیش از اجرا به کاربر اعلام شود.</summary>
     VeryFine,
+
+    /// <summary>فوق‌دقیق — ۵۱۲ بخش زاویه‌ای و گام z خیلی ریز؛ رزوهٔ بسیار نرم (گسترش ۰٫۴٫۰).</summary>
+    Ultra,
+
+    /// <summary>حدی — ۷۶۸ بخش زاویه‌ای و ریزترین گام z؛ بیشترین نرمی قطعه، سنگین‌ترین فایل/زمان (گسترش ۰٫۴٫۰).</summary>
+    Extreme,
 }
 
 /// <summary>
@@ -39,6 +45,8 @@ public static class MeshQuality
         MeshQualityPreset.Balanced => Math.Max(pitchMm / 10.0, 0.15),
         MeshQualityPreset.Fine => Math.Max(pitchMm / 16.0, 0.08),
         MeshQualityPreset.VeryFine => Math.Max(pitchMm / 24.0, 0.04),
+        MeshQualityPreset.Ultra => Math.Max(pitchMm / 36.0, 0.025),
+        MeshQualityPreset.Extreme => Math.Max(pitchMm / 48.0, 0.018),
         _ => Math.Max(pitchMm / 10.0, 0.15),
     };
 
@@ -56,11 +64,14 @@ public static class MeshQuality
             MeshQualityPreset.Balanced => 96,
             MeshQualityPreset.Fine => 192,
             MeshQualityPreset.VeryFine => 320,
+            MeshQualityPreset.Ultra => 512,
+            MeshQualityPreset.Extreme => 768,
             _ => 96,
         };
 
         // پیشرفت مارپیچی در هر گام زاویه‌ای نباید از گام z بگذرد وگرنه دندانه‌ها روی سطح «له» می‌شوند.
+        // سقف ۱۴۴۰ از ۰٫۴٫۰: اجازهٔ مش خیلی ریز برای Ultra/Extreme (پیش‌تر ۷۲۰ بود).
         var required = (int)Math.Ceiling(leadMm / Math.Max(zStepMm, 1e-6));
-        return Math.Clamp(Math.Max(baseCount, required), 48, 720);
+        return Math.Clamp(Math.Max(baseCount, required), 48, 1440);
     }
 }
