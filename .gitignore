@@ -1,0 +1,30 @@
+# --- خروجی‌های build دات‌نت ---
+bin/
+obj/
+artifacts/
+TestResults/
+*.user
+*.suo
+.vs/
+.idea/
+*.DotSettings.user
+
+# --- فایل‌های موقت و بازیابی ---
+*.tmp
+*.autosave
+*.bak
+*.log
+
+# --- خروجی‌های نمونهٔ تولیدی CLI که نباید کامیت شود (نمونه‌های هدفمند جداگانه اضافه می‌شوند) ---
+download/
+out/
+
+# --- محرمانه: هیچ فایل راز/کلیدی در مخزن جای ندارد ---
+*.pfx
+*.key
+secrets.json
+appsettings.local.json
+
+# --- سیستم‌عامل ---
+Thumbs.db
+.DS_Store
