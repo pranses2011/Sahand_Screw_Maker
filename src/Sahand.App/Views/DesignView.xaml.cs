@@ -197,14 +197,18 @@ public partial class DesignView : UserControl
     }
 
     /// <summary>کیفیت ساخت مدل از فرم — پیش‌فرض «دقیق» (۱۹۲ بخش زاویه‌ای، گام ۰٫۴٫۰).</summary>
-    private MeshQualityPreset ParseBuildQuality() =>
-        ((ComboBoxItem)BuildQualityBox?.SelectedItem)?.Tag as string switch
+    private MeshQualityPreset ParseBuildQuality()
+    {
+        // الگوی امن nullability: as-cast به ComboBoxItem? سپس Tag — مثل بقیهٔ فرم.
+        var tag = (BuildQualityBox.SelectedItem as ComboBoxItem)?.Tag as string;
+        return tag switch
         {
             "Draft" => MeshQualityPreset.Draft,
             "Balanced" => MeshQualityPreset.Balanced,
             "VeryFine" => MeshQualityPreset.VeryFine,
             _ => MeshQualityPreset.Fine,
         };
+    }
 
     /// <summary>ساخت سند پروژه از روی فرم — با پارسر عددی امن (ارقام فارسی/اعشار فارسی).</summary>
     private ProjectDocument? BuildDocumentFromForm()
