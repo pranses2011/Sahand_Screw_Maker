@@ -425,6 +425,8 @@ public static class Commands
             "draft" => MeshQualityPreset.Draft,
             "fine" => MeshQualityPreset.Fine,
             "veryfine" or "very-fine" => MeshQualityPreset.VeryFine,
+            "ultra" => MeshQualityPreset.Ultra,
+            "extreme" or "max" => MeshQualityPreset.Extreme,
             _ => MeshQualityPreset.Balanced,
         };
 
@@ -434,6 +436,8 @@ public static class Commands
         MeshQualityPreset.Draft => ExportQualityPreset.Draft,
         MeshQualityPreset.Fine => ExportQualityPreset.Fine,
         MeshQualityPreset.VeryFine => ExportQualityPreset.VeryFine,
+        MeshQualityPreset.Ultra => ExportQualityPreset.Ultra,
+        MeshQualityPreset.Extreme => ExportQualityPreset.Extreme,
         _ => ExportQualityPreset.Balanced,
     };
 

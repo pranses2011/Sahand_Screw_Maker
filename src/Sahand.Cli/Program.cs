@@ -95,7 +95,7 @@ public static class Program
                         --torx mm --torx-depth mm  (محرک تورکس)
                         --across-flats mm --head-height mm --height mm
                         --thread mm (طول رزوه) --left (چپ‌گرد) --simplified (بدون رزوهٔ واقعی)
-                        --quality draft|balanced|fine|veryfine
+                        --quality draft|balanced|fine|veryfine|ultra|extreme
                         --export STL|OBJ|PLY|3MF|GLB   --ascii
                         --out مسیر.ssnd   --name نام
               export    خروجی مش از پروژهٔ ssnd
