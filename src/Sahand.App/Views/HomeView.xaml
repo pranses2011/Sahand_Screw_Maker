@@ -1,0 +1,63 @@
+<UserControl x:Class="Sahand.App.Views.HomeView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <!--
+        خانه — ایجاد پروژه، پروژهٔ نمونهٔ «مجاز» و دسترسی سریع (سند ۲-۲).
+        تصویر تزئینی/آنلاین وجود ندارد؛ نمودار گردش کار متنی-ساده است.
+    -->
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="14" MaxWidth="720" HorizontalAlignment="Right">
+            <TextBlock Text="طراح پیچ و مهره سهند" FontSize="24" FontWeight="Bold" Margin="0,0,0,4"/>
+            <TextBlock Text="ابزار پارامتریکِ آفلاین برای طراحی پیچ، مهره، واشر و میلهٔ رزوه‌دار با رزوهٔ واقعی مارپیچ"
+                       Foreground="{StaticResource Brush.TextSecondary}" TextWrapping="Wrap" Margin="0,0,0,16"/>
+
+            <GroupBox Header="شروع سریع" Margin="0,0,0,10">
+                <StackPanel>
+                    <Button x:Name="NewBoltButton" Content="پیچ جدید (از کاتالوگ ISO متریک)"
+                            HorizontalAlignment="Stretch" Margin="0,4" Click="OnNewBoltClick"/>
+                    <Button x:Name="NewNutButton" Content="مهرهٔ جدید" Style="{StaticResource SecondaryButton}"
+                            HorizontalAlignment="Stretch" Margin="0,4" Click="OnNewNutClick"/>
+                    <Button x:Name="OpenButton" Content="بازکردن پروژهٔ موجود (‎.ssnd)" Style="{StaticResource SecondaryButton}"
+                            HorizontalAlignment="Stretch" Margin="0,4" Click="OnOpenClick"/>
+                </StackPanel>
+            </GroupBox>
+
+            <GroupBox Header="پروژه‌های نمونه" Margin="0,0,0,10">
+                <StackPanel>
+                    <TextBlock Text="نمونه‌ها با کاتالوگ داخلی ساخته می‌شوند و «نمونه» محسوب می‌شوند، نه استاندارد قطعی."
+                               Foreground="{StaticResource Brush.TextSecondary}"
+                               FontSize="{StaticResource FontSize.Small}" TextWrapping="Wrap" Margin="0,0,0,8"/>
+                    <StackPanel Orientation="Horizontal">
+                        <Button Content="پیچ M6 شش‌گوش ×۲۰" Style="{StaticResource SecondaryButton}" Margin="0,0,8,0"
+                                Click="OnSampleM6Click"/>
+                        <Button Content="پیچ M8 آلن ×۱۶" Style="{StaticResource SecondaryButton}" Margin="0,0,8,0"
+                                Click="OnSampleSocketClick"/>
+                        <Button Content="مهرهٔ M10" Style="{StaticResource SecondaryButton}"
+                                Click="OnSampleNutClick"/>
+                    </StackPanel>
+                </StackPanel>
+            </GroupBox>
+
+            <GroupBox Header="گردش کار پیشنهادی" Margin="0,0,0,10">
+                <StackPanel>
+                    <TextBlock Text="۱. نوع قطعه و اندازه را انتخاب کنید (کاتالوگ یا سفارشی)."
+                               Margin="0,3" FontSize="{StaticResource FontSize.Small}"/>
+                    <TextBlock Text="۲. ابعاد/رزوه را وارد و مدل را بسازید." Margin="0,3"
+                               FontSize="{StaticResource FontSize.Small}"/>
+                    <TextBlock Text="۳. در پیش‌نمایش، اعتبارسنجی هندسی را ببینید." Margin="0,3"
+                               FontSize="{StaticResource FontSize.Small}"/>
+                    <TextBlock Text="۴. در صورت نیاز، نسخهٔ چاپی را مشتق و مقایسه کنید." Margin="0,3"
+                               FontSize="{StaticResource FontSize.Small}"/>
+                    <TextBlock Text="۵. خروجی را با فرمت/کیفیت دلخواه بگیرید." Margin="0,3"
+                               FontSize="{StaticResource FontSize.Small}"/>
+                </StackPanel>
+            </GroupBox>
+
+            <Border Background="#E9F4EC" CornerRadius="6" Padding="10">
+                <TextBlock Text="یادآوری صداقت مهندسی: این نرم‌افزار گواهی طراحی سازه‌ای، تأیید باربری یا چاپ موفق صادر نمی‌کند؛ اعداد کاتالوگ «بر پایهٔ» سری‌های شناخته‌شده‌اند و جایگزین استاندارد رسمی نیستند."
+                           Foreground="{StaticResource Brush.Success}" TextWrapping="Wrap"
+                           FontSize="{StaticResource FontSize.Small}"/>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>
