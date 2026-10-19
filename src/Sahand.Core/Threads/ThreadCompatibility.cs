@@ -61,9 +61,13 @@ public static class ThreadCompatibility
                 $"تعداد شروع‌ها متفاوت است: {external.Starts} در برابر {internalThread.Starts}. تعداد شروع‌های جفت باید برابر باشد.");
 
         if (external.Handedness != internalThread.Handedness)
+        {
+            // جهت‌ها به فارسی جداگانه ساخته می‌شوند تا interpolation پیچیده و شکننده نشود.
+            var externalHand = external.Handedness == ThreadHandedness.Right ? "راست‌گرد" : "چپ‌گرد";
+            var internalHand = internalThread.Handedness == ThreadHandedness.Right ? "راست‌گرد" : "چپ‌گرد";
             issues.Add(
-                $"جهت رزوه متفاوت است: {external.Handedness == ThreadHandedness.Right ? "راست‌گرد" : "چپ‌گرد"} در برابر " +
-                $"{internalThread.Handedness == ThreadHandedness.Right ? "راست‌گرد" : "چپ‌گرد"}. پیچ چپ‌گرد فقط با مهرهٔ چپ‌گرد جفت می‌شود.");
+                $"جهت رزوه متفاوت است: {externalHand} در برابر {internalHand}. پیچ چپ‌گرد فقط با مهرهٔ چپ‌گرد جفت می‌شود.");
+        }
 
         if (Math.Abs(external.TaperDegrees - internalThread.TaperDegrees) > 1e-4)
             issues.Add(
