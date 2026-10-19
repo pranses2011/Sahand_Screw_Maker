@@ -24,7 +24,7 @@ public static class NutBuilder
         ArgumentNullException.ThrowIfNull(spec);
 
         var thread = spec.Thread;
-        var profile = ThreadProfileFactory.BuildProfile(thread);
+        var profile = ThreadProfileFactory.BuildProfile(thread).ToProfileFunction();
         var nominalR = thread.NominalDiameterMm / 2.0;
 
         // حالت نمایشی: حفرهٔ صاف بدون دندانه — برچسب آن در UI/خروجی الزامی است.
@@ -50,7 +50,7 @@ public static class NutBuilder
 
         // --- بدنهٔ شش‌گوش با پخ دو سر (۴۵ درجه) ---
         double RadiusAt(double theta, double z) =>
-            HexRadius(af, theta) - Math.Max(0.0, chamfer - z, z - (height - chamfer));
+            HexRadius(af, theta) - Math.Max(Math.Max(0.0, chamfer - z), z - (height - chamfer));
 
         var levels = new List<double>();
         foreach (var z in new[] { 0.0, chamfer, height - chamfer, height }.OrderBy(x => x))

@@ -22,4 +22,10 @@ public sealed record ThreadProfileGeometry(
     IReadOnlyList<ThreadProfilePoint> Points,
     double MajorDiameterMm,
     double MinorDiameterMm,
-    double PitchDiameterMm);
+    double PitchDiameterMm)
+{
+    /// <summary>
+    /// تابع شعاعی تناوبی معادل این پروفیل را می‌سازد — ورودی مستقیم موتور هندسه.
+    /// </summary>
+    public RadialProfileFunction ToProfileFunction() => new(Points);
+}

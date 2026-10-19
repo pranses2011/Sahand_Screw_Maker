@@ -24,7 +24,7 @@ public static class WasherBuilder
         var innerR = spec.InnerDiameterMm / 2.0;
         var outerR = spec.OuterDiameterMm / 2.0;
         var thickness = spec.ThicknessMm;
-        var chamfer = Math.Min(spec.EdgeChamferMm, thickness / 2.0, (outerR - innerR) / 2.0);
+        var chamfer = Math.Min(spec.EdgeChamferMm, Math.Min(thickness / 2.0, (outerR - innerR) / 2.0));
 
         // پخ فقط اگر جا داشته باشد؛ در غیر این صورت پروفیل مستطیلی ساده.
         var hasChamfer = chamfer > 1e-9;

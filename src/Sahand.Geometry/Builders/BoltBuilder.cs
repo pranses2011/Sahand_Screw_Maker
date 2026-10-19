@@ -27,7 +27,7 @@ public static class BoltBuilder
         ArgumentNullException.ThrowIfNull(spec);
 
         var thread = spec.Thread;
-        var profile = ThreadProfileFactory.BuildProfile(thread);
+        var profile = ThreadProfileFactory.BuildProfile(thread).ToProfileFunction();
         var nominalR = thread.NominalDiameterMm / 2.0;
 
         // پروفیل «بدون رزوهٔ واقعی»: تابع ثابت به اندازهٔ شعاع اسمی — برای حالت نمایشی.
