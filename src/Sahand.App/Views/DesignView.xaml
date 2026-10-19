@@ -90,6 +90,8 @@
                             <ComboBoxItem Content="استوانه‌ای آلن" Tag="SocketCap"/>
                             <ComboBoxItem Content="خزینه (مخروطی)" Tag="FlatCountersunk"/>
                             <ComboBoxItem Content="نیم‌گرد" Tag="Pan"/>
+                            <ComboBoxItem Content="دکمه‌ای (گنبد کم‌انحنا)" Tag="Button"/>
+                            <ComboBoxItem Content="فلنجی (شش‌گوش + دیسک)" Tag="Flange"/>
                         </ComboBox>
                     </StackPanel>
                     <StackPanel Orientation="Horizontal" Margin="0,4">
@@ -98,6 +100,8 @@
                             <ComboBoxItem Content="بدون محرک" Tag="None" IsSelected="True"/>
                             <ComboBoxItem Content="حفرهٔ آلن" Tag="HexSocket"/>
                             <ComboBoxItem Content="حفرهٔ تورکس (شش‌پر)" Tag="Torx"/>
+                            <ComboBoxItem Content="آلن امنیتی (پین مرکزی)" Tag="PinHex"/>
+                            <ComboBoxItem Content="تورکس امنیتی (پین مرکزی)" Tag="SecurityTorx"/>
                             <ComboBoxItem Content="شیار تخت" Tag="Slot"/>
                             <ComboBoxItem Content="شیار صلیبی (بر پایهٔ فرم فیلیپس)" Tag="Phillips"/>
                         </ComboBox>
@@ -105,6 +109,21 @@
                     <StackPanel Orientation="Horizontal" Margin="0,4">
                         <TextBlock Text="قطر سر (دایره‌ای):" Width="150" VerticalAlignment="Center"/>
                         <TextBox x:Name="HeadDiameterBox" Width="110" FlowDirection="LeftToRight" Text="9.3"/>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,4">
+                        <TextBlock Text="قطر دیسک فلنج:" Width="150" VerticalAlignment="Center"
+                                   ToolTip="فقط سر فلنجی — باید از عرض آچارخور بزرگ‌تر باشد (پیش‌فرض ~۱٫۹ برابر قطر)"/>
+                        <TextBox x:Name="FlangeDiameterBox" Width="110" FlowDirection="LeftToRight" Text="11.4"/>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,4">
+                        <TextBlock Text="ضخامت دیسک فلنج:" Width="150" VerticalAlignment="Center"
+                                   ToolTip="فقط سر فلنجی — کمتر از ارتفاع سر (پیش‌فرض ~۰٫۲۵ برابر قطر)"/>
+                        <TextBox x:Name="FlangeThicknessBox" Width="110" FlowDirection="LeftToRight" Text="1.5"/>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,4">
+                        <TextBlock Text="قطر پین امنیتی:" Width="150" VerticalAlignment="Center"
+                                   ToolTip="فقط محرک‌های امنیتی آلن/تورکس پین‌دار — پین مرکزی که آچار معمولی را قفل می‌کند"/>
+                        <TextBox x:Name="SecurityPinDiameterBox" Width="110" FlowDirection="LeftToRight" Text="1.4"/>
                     </StackPanel>
                     <StackPanel Orientation="Horizontal" Margin="0,4">
                         <TextBlock Text="پهنای شیار:" Width="150" VerticalAlignment="Center"/>

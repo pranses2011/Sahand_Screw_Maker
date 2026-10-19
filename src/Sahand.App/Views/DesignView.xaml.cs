@@ -112,6 +112,9 @@ public partial class DesignView : UserControl
         AcrossFlatsBox.Text = (entry.NominalDiameterMm * 1.55).ToString("0.###", inv);
         HeadHeightBox.Text = (entry.NominalDiameterMm * 0.65).ToString("0.###", inv);
         HeadDiameterBox.Text = (entry.NominalDiameterMm * 1.55).ToString("0.###", inv);
+        FlangeDiameterBox.Text = (entry.NominalDiameterMm * 1.9).ToString("0.###", inv);
+        FlangeThicknessBox.Text = Math.Max(entry.NominalDiameterMm * 0.25, 0.8).ToString("0.###", inv);
+        SecurityPinDiameterBox.Text = Math.Max(entry.NominalDiameterMm * 0.22, 0.5).ToString("0.###", inv);
     }
 
     private async void OnBuildClick(object sender, RoutedEventArgs e)
@@ -233,6 +236,9 @@ public partial class DesignView : UserControl
         var headDiameter = ParseNumber(HeadDiameterBox.Text, "قطر سر") ?? diameter * 1.55;
         var slotWidth = ParseNumber(SlotWidthBox.Text, "پهنای شیار") ?? diameter * 0.18;
         var slotDepth = ParseNumber(SlotDepthBox.Text, "عمق شیار") ?? diameter * 0.15;
+        var flangeDiameter = ParseNumber(FlangeDiameterBox.Text, "قطر فلنج") ?? diameter * 1.9;
+        var flangeThickness = ParseNumber(FlangeThicknessBox.Text, "ضخامت فلنج") ?? Math.Max(diameter * 0.25, 0.8);
+        var securityPin = ParseNumber(SecurityPinDiameterBox.Text, "قطر پین امنیتی") ?? diameter * 0.22;
         var threadRunout = string.IsNullOrWhiteSpace(ThreadRunoutBox.Text)
             ? (double?)null
             : ParseNumber(ThreadRunoutBox.Text, "طول رزوه");
@@ -276,14 +282,17 @@ public partial class DesignView : UserControl
                         Thread = thread,
                         LengthUnderHeadMm = length,
                         HeadHeightMm = headHeight,
-                        HeadAcrossFlatsMm = head == HeadStyle.Hex ? acrossFlats : null,
-                        HeadDiameterMm = head is HeadStyle.SocketCap or HeadStyle.Pan or HeadStyle.FlatCountersunk ? headDiameter : null,
+                        HeadAcrossFlatsMm = head is HeadStyle.Hex or HeadStyle.Flange ? acrossFlats : null,
+                        HeadDiameterMm = head is HeadStyle.SocketCap or HeadStyle.Pan or HeadStyle.FlatCountersunk or HeadStyle.Button ? headDiameter : null,
+                        FlangeDiameterMm = head == HeadStyle.Flange ? flangeDiameter : null,
+                        FlangeThicknessMm = head == HeadStyle.Flange ? flangeThickness : null,
                         SlotWidthMm = drive is DriveStyle.Slot or DriveStyle.Phillips ? slotWidth : null,
                         SlotDepthMm = drive is DriveStyle.Slot or DriveStyle.Phillips ? slotDepth : null,
-                        HexSocketAcrossFlatsMm = drive == DriveStyle.HexSocket ? diameter * 0.55 : null,
-                        HexSocketDepthMm = drive == DriveStyle.HexSocket ? diameter * 0.35 : null,
-                        TorxAcrossLobesMm = drive == DriveStyle.Torx ? diameter * 0.65 : null,
-                        TorxDepthMm = drive == DriveStyle.Torx ? diameter * 0.32 : null,
+                        HexSocketAcrossFlatsMm = drive is DriveStyle.HexSocket or DriveStyle.PinHex ? diameter * 0.55 : null,
+                        HexSocketDepthMm = drive is DriveStyle.HexSocket or DriveStyle.PinHex ? diameter * 0.35 : null,
+                        TorxAcrossLobesMm = drive is DriveStyle.Torx or DriveStyle.SecurityTorx ? diameter * 0.65 : null,
+                        TorxDepthMm = drive is DriveStyle.Torx or DriveStyle.SecurityTorx ? diameter * 0.32 : null,
+                        SecurityPinDiameterMm = drive is DriveStyle.PinHex or DriveStyle.SecurityTorx ? securityPin : null,
                         ThreadRunoutFromTipMm = threadRunout,
                         TipChamferMm = pitch * 0.6,
                     },
@@ -335,10 +344,15 @@ public partial class DesignView : UserControl
                             Thread = thread,
                             LengthUnderHeadMm = length,
                             HeadHeightMm = headHeight,
-                            HeadAcrossFlatsMm = head == HeadStyle.Hex ? acrossFlats : null,
-                            HeadDiameterMm = head is HeadStyle.SocketCap or HeadStyle.Pan or HeadStyle.FlatCountersunk ? headDiameter : null,
-                            TorxAcrossLobesMm = drive == DriveStyle.Torx ? diameter * 0.65 : null,
-                            TorxDepthMm = drive == DriveStyle.Torx ? diameter * 0.32 : null,
+                            HeadAcrossFlatsMm = head is HeadStyle.Hex or HeadStyle.Flange ? acrossFlats : null,
+                            HeadDiameterMm = head is HeadStyle.SocketCap or HeadStyle.Pan or HeadStyle.FlatCountersunk or HeadStyle.Button ? headDiameter : null,
+                            FlangeDiameterMm = head == HeadStyle.Flange ? flangeDiameter : null,
+                            FlangeThicknessMm = head == HeadStyle.Flange ? flangeThickness : null,
+                            HexSocketAcrossFlatsMm = drive is DriveStyle.HexSocket or DriveStyle.PinHex ? diameter * 0.55 : null,
+                            HexSocketDepthMm = drive is DriveStyle.HexSocket or DriveStyle.PinHex ? diameter * 0.35 : null,
+                            TorxAcrossLobesMm = drive is DriveStyle.Torx or DriveStyle.SecurityTorx ? diameter * 0.65 : null,
+                            TorxDepthMm = drive is DriveStyle.Torx or DriveStyle.SecurityTorx ? diameter * 0.32 : null,
+                            SecurityPinDiameterMm = drive is DriveStyle.PinHex or DriveStyle.SecurityTorx ? securityPin : null,
                             TipChamferMm = pitch * 0.6,
                         },
                         Nut = new NutSpec
