@@ -267,7 +267,7 @@ public partial class ExportView : UserControl
         _ => null,
     };
 
-    private ExportQualityPreset ParseQuality() => ((ComboBoxItem)QualityBox.SelectedItem)?.Tag as string switch
+    private ExportQualityPreset ParseQuality() => (((ComboBoxItem)QualityBox.SelectedItem)?.Tag as string) switch
     {
         "Draft" => ExportQualityPreset.Draft,
         "Fine" => ExportQualityPreset.Fine,

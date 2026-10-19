@@ -51,6 +51,10 @@ public static class RadialSurface
     /// <summary>
     /// سطح شعاعی رو به داخل (حفره) می‌سازد و حلقه‌ها را برمی‌گرداند.
     /// </summary>
+    /// <param name="mesh">مش مقصد.</param>
+    /// <param name="grid">شبکهٔ زاویه‌ای.</param>
+    /// <param name="radiusAt">تابع شعاع (θ رادیان، z میلی‌متر).</param>
+    /// <param name="zLevels">ترازهای z اکیداً صعودی (دست‌کم ۲).</param>
     /// <param name="capFirst">درپوش تراز اول (نرمال +Z؛ ماده در z کوچک‌تر — کفِ حفرهٔ از پایین).</param>
     /// <param name="capLast">درپوش تراز آخر (نرمال −Z؛ ماده در z بزرگ‌تر — کفِ حفرهٔ از بالا).</param>
     public static int[][] AddInwardSurface(
@@ -82,6 +86,7 @@ public static class RadialSurface
     /// <summary>
     /// درپوش بادبزکی از محور روی حلقهٔ موجود — با اشتراک اندیس رأس‌ها (الزام watertight).
     /// </summary>
+    /// <param name="mesh">مش مقصد.</param>
     /// <param name="ring">حلقهٔ مرز درپوش (اندیس رأس‌ها به‌ترتیب زاویه).</param>
     /// <param name="zMm">تراز درپوش (فقط برای ایجاد رأس مرکز).</param>
     /// <param name="solidBelow">true = نرمال +Z (ماده زیر تراز).</param>
@@ -105,6 +110,7 @@ public static class RadialSurface
     /// <summary>
     /// درپوش حلقه‌ای بین دو حلقهٔ موجود در یک تراز — مثل سطح اتکای مهره یا زیر سر پیچ.
     /// </summary>
+    /// <param name="mesh">مش مقصد.</param>
     /// <param name="innerRing">حلقهٔ داخلی (اندیس رأس‌های مشترک سطح داخلی).</param>
     /// <param name="outerRing">حلقهٔ خارجی (اندیس رأس‌های مشترک سطح خارجی).</param>
     /// <param name="solidBelow">true = نرمال +Z (ماده زیر تراز؛ مثل رویهٔ اتکای سر پیچ).</param>

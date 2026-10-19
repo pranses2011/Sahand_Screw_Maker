@@ -52,7 +52,7 @@ public partial class PrintView : UserControl, INotifyPropertyChanged
     private PrintProfile BuildProfileFromForm()
     {
         var fit = ((ComboBoxItem)FitBox.SelectedItem)?.Tag as string ?? "Snug";
-        var process = ((ComboBoxItem)ProcessBox.SelectedItem)?.Tag as string switch
+        var process = (((ComboBoxItem)ProcessBox.SelectedItem)?.Tag as string) switch
         {
             "Sla" => PrintProcess.Sla,
             "Sls" => PrintProcess.Sls,
