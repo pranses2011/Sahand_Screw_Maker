@@ -115,11 +115,12 @@ public class CatalogTests
     }
 
     [Fact]
-    public void UnsupportedFamilyCatalog_IsEmptyByDesign()
+    public void FamiliesWithoutCatalogData_AreEmptyByDesign()
     {
         // خانواده‌های بدون دادهٔ کاتالوگ: فهرست خالی — ادعای پوشش داده نمی‌شود.
-        var entries = ThreadCatalog.GetEntries(ThreadFamily.Whitworth);
-        Assert.Empty(entries);
+        // (ویتوورث/NPT/BSP/Tr/ACME از ۰٫۳٫۰ کاتالوگ دارند — آزمون‌های CatalogFamiliesTests.)
+        Assert.Empty(ThreadCatalog.GetEntries(ThreadFamily.Square));
+        Assert.Empty(ThreadCatalog.GetEntries(ThreadFamily.Custom));
     }
 
     [Fact]
