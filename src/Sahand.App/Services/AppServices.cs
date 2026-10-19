@@ -37,7 +37,7 @@ public sealed class AppServices
     public SmtpSettingsStore SmtpSettings { get; }
 
     /// <summary>نسخهٔ برنامه برای فرادادهٔ گزارش.</summary>
-    public string AppVersion { get; } = "0.1.0";
+    public string AppVersion { get; } = "0.2.0";
 
     /// <summary>ساخت سرویس‌ها با پوشهٔ دادهٔ پیش‌فرض کاربر.</summary>
     public AppServices()

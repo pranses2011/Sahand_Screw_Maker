@@ -45,7 +45,7 @@ public static class Program
 
     private static int PrintVersion()
     {
-        Console.WriteLine("Sahand Screw & Nut Designer — ssnd-cli نسخهٔ 0.1.0");
+        Console.WriteLine("Sahand Screw & Nut Designer — ssnd-cli نسخهٔ 0.2.0");
         Console.WriteLine("موتور هندسه: مش پارامتریک داخلی (بدون هستهٔ B-Rep — خروجی STEP در برنامهٔ توسعه)");
         return 0;
     }

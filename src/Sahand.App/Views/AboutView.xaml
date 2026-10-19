@@ -23,7 +23,7 @@
                     </StackPanel>
                     <StackPanel Orientation="Horizontal" Margin="0,4">
                         <TextBlock Text="نسخه:" Width="150"/>
-                        <TextBlock x:Name="VersionText" Text="0.1.0"/>
+                        <TextBlock x:Name="VersionText" Text="0.2.0"/>
                     </StackPanel>
                     <StackPanel Orientation="Horizontal" Margin="0,4">
                         <TextBlock Text="موتور هندسه:" Width="150"/>

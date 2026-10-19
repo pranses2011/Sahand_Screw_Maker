@@ -22,6 +22,9 @@ public partial class AboutView : UserControl
     public AboutView()
     {
         InitializeComponent();
+        // نسخه از اسمبلی خوانده می‌شود تا با csproj همیشه هم‌گام بماند.
+        var version = GetType().Assembly.GetName().Version;
+        if (version is not null) VersionText.Text = version.ToString(3);
         CardText.Text = MaskedDisplay;
     }
 
