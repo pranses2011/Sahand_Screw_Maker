@@ -117,31 +117,29 @@ public static class ThreadProfileFactory
         var nominalR = spec.NominalDiameterMm / 2.0;
 
         // رزوهٔ خارجی: دندانه از کف (ریشه) به قطر اسمی می‌رسد. رزوهٔ داخلی: دره روی دیوارهٔ سوراخ
-        // (قطر اسمی جفت) است و نوک دندانه به سمت محور می‌رود؛ پهنای تاج/دره بین دو نوع جابه‌جا می‌شود
-        // چون برش پروفیل پایهٔ ISO 68 برای تاجِ داخلی H/4 و برای تاجِ خارجی H/8 است.
+        // (قطر اسمی جفت) است و نوک دندانه به سمت محور می‌رود؛ پهنای نوک بین دو نوع جابه‌جا می‌شود
+        // چون برش پروفیل پایهٔ ISO 68 برای نوکِ داخلی H/4 و برای تاجِ خارجی H/8 است.
+        // (جایگاه نقاط دندانه برای هر دو نوع یکی است: دره در لبهٔ سلول، نوک در مرکز.)
         bool isExternal = spec.Kind == ThreadKind.External;
-        double valleyR, tipR;
-        double tipWidth, rootFlatWidth;
+        double valleyR, tipR, tipWidthMm;
         if (isExternal)
         {
             valleyR = nominalR - depthMm; // کف دندانهٔ خارجی زیر قطر اسمی.
             tipR = nominalR;              // تاج دندانهٔ خارجی روی قطر اسمی.
-            tipWidth = crestWidthMm;
-            rootFlatWidth = valleyWidthMm;
+            tipWidthMm = crestWidthMm;    // پهنای تاج خارجی (برش H/8).
         }
         else
         {
             valleyR = nominalR;           // درهٔ داخلی روی دیوارهٔ سوراخ.
             tipR = nominalR - depthMm;    // نوک دندانهٔ داخلی به سمت محور.
-            tipWidth = valleyWidthMm;     // برای داخلی، پهنای نوک برابر پهنای درهٔ پروفیل خارجی است.
-            rootFlatWidth = crestWidthMm; // و پهنای دره برابر پهنای تاج خارجی.
+            tipWidthMm = valleyWidthMm;    // پهنای نوک داخلی (برش H/4) — جابه‌جایی ISO 68.
         }
 
         var points = new List<ThreadProfilePoint>();
         var teeth = Math.Max(1, spec.Starts);
         for (var tooth = 0; tooth < teeth; tooth++)
         {
-            AppendTooth(points, tooth * pitch, pitch, valleyR, tipR, rootFlatWidth, tipWidth, halfAngleDeg);
+            AppendTooth(points, tooth * pitch, pitch, valleyR, tipR, tipWidthMm, halfAngleDeg);
         }
 
         // نقطهٔ پایان دوره روی شعاع دره؛ پیوستگی تناوب با نقطهٔ ابتدای دوره برقرار است.
@@ -199,33 +197,40 @@ public static class ThreadProfileFactory
     /// <summary>
     /// یک دندانهٔ متقارن را در سلول گام [cellStart, cellStart+pitch] به نقاط می‌افزاید.
     /// </summary>
+    /// <remarks>
+    /// ساختار دندانه برای هر دو نوع داخلی/خارجی یکسان است و فقط ترتیب شعاع فرق می‌کند:
+    /// پهنای دره در لبه‌های سلول، سپس دیواره، سپس پهنای نوک در مرکز سلول. نقاط همیشه
+    /// صعودی در محورند (الزام RadialProfileFunction).
+    /// </remarks>
     private static void AppendTooth(
         List<ThreadProfilePoint> points,
         double cellStart,
         double pitch,
         double valleyR,
         double tipR,
-        double valleyWidthMm,
         double tipWidthMm,
         double halfAngleDeg)
     {
         var center = cellStart + pitch / 2.0;
 
-        // اگر نیم‌زاویه صفر باشد دیواره‌ها عمودی‌اند (رزوهٔ مربعی)؛ برای بقیه، شیب دیواره با tan محاسبه می‌شود.
+        // گسترش محوری دیواره = عمق × tan(نیم‌زاویه)؛ برای مربعی (۰°) دیواره عمودی است.
         var flankRun = halfAngleDeg <= 0
             ? 0.0
             : Math.Abs(tipR - valleyR) * Math.Tan(halfAngleDeg * Math.PI / 180.0);
 
         var tipHalf = tipWidthMm / 2.0;
-        // پهنای دره حداکثر به‌اندازهٔ فضای باقی‌ماندهٔ سلول محدود می‌شود تا نقاط همیشه صعودی بمانند.
-        var valleyHalf = Math.Max(0.0, Math.Min(pitch / 2.0 - tipHalf - flankRun, valleyWidthMm / 2.0));
+
+        // گارد هندسی: نوک + دیواره نباید از نیم‌گام بگذرد؛ در حالت مرزی، دیواره فشرده می‌شود
+        // (دندانهٔ پُر بدون پهنای دره — تقریب قابل قبول برای گام‌های بسیار درشت).
+        var maxRun = pitch / 2.0 - tipHalf;
+        if (flankRun > maxRun) flankRun = Math.Max(0.0, maxRun);
 
         points.Add(new ThreadProfilePoint(valleyR, cellStart));
-        points.Add(new ThreadProfilePoint(valleyR, center - valleyHalf));
+        points.Add(new ThreadProfilePoint(valleyR, center - tipHalf - flankRun));
         points.Add(new ThreadProfilePoint(tipR, center - tipHalf));
         points.Add(new ThreadProfilePoint(tipR, center + tipHalf));
-        points.Add(new ThreadProfilePoint(valleyR, center + valleyHalf));
-        // نقطهٔ u=cellStart+pitch به‌عنوان آغاز سلول بعد در فراخوانی بعدی افزوده می‌شود.
+        points.Add(new ThreadProfilePoint(valleyR, center + tipHalf + flankRun));
+        // نقطهٔ u=cellStart+pitch به‌عنوان آغاز سلول بعد افزوده می‌شود.
     }
 
     /// <summary>

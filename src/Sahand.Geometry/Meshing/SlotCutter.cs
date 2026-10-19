@@ -74,7 +74,6 @@ public static class SlotCutter
         var ringFloor = new int[count];
         var ringSide = new int[count];
         var ringTop = new int[count];
-        var hasTop = phillips ? BuildPhillipsTopMask(angles, alpha) : BuildSlotTopMask(angles, alpha);
 
         for (var i = 0; i < count; i++)
         {
@@ -97,15 +96,34 @@ public static class SlotCutter
         }
 
         // --- دیوارهٔ جانبی (نوارهای رو به بیرون؛ ترازهای z صعودی) ---
+        // نوار بالایی فقط روی بخش‌های خارج از پهنای شیار؛ نوار «داخل یک باند شیار» رد می‌شود.
+        // تعیین باند (شامل لبه‌ها) لازم است چون لبهٔ باند (زاویهٔ خروج) خودش باید به نوار
+        // بیرونی بچسبد وگرنه یال مرزی می‌ماند.
+        int BandOf(double a)
+        {
+            if (a <= alpha || a >= 2.0 * Math.PI - alpha) return 0;
+            if (a >= Math.PI - alpha && a <= Math.PI + alpha) return 1;
+            if (phillips)
+            {
+                if (a >= Math.PI / 2.0 - alpha && a <= Math.PI / 2.0 + alpha) return 2;
+                if (a >= 3.0 * Math.PI / 2.0 - alpha && a <= 3.0 * Math.PI / 2.0 + alpha) return 3;
+            }
+            return -1;
+        }
+
         for (var i = 0; i < count; i++)
         {
             var next = (i + 1) % count;
-            // نوار پایینی: floorZ < sideFromZ.
+            // نوار پایینی: استوانهٔ کامل از کف شیار تا سطح اتکا.
             mesh.AddQuad(ringFloor[i], ringFloor[next], ringSide[next], ringSide[i]);
 
-            // نوار بالایی فقط روی کمان‌های خارج از شیار: topZ < floorZ.
-            if (hasTop[i] && hasTop[next])
+            // نوار بالایی: فقط وقتی بازهٔ [θᵢ, θᵢ₊₁] کاملاً داخل یک باند شیار نباشد.
+            var bandI = BandOf(angles[i]);
+            var bandNext = BandOf(angles[next]);
+            if (bandI == -1 || bandNext == -1 || bandI != bandNext)
+            {
                 mesh.AddQuad(ringTop[i], ringTop[next], ringFloor[next], ringFloor[i]);
+            }
         }
 
         if (phillips)
@@ -122,36 +140,6 @@ public static class SlotCutter
         }
 
         return ringSide;
-    }
-
-    /// <summary>نقاب زوایای خارج از پاهنای شیار تکی (امتداد X).</summary>
-    private static bool[] BuildSlotTopMask(double[] angles, double alpha)
-    {
-        var mask = new bool[angles.Length];
-        for (var i = 0; i < angles.Length; i++)
-        {
-            var a = angles[i];
-            var inSlotBand = a <= alpha || a >= 2.0 * Math.PI - alpha ||
-                             (a >= Math.PI - alpha && a <= Math.PI + alpha);
-            mask[i] = !inSlotBand;
-        }
-        return mask;
-    }
-
-    /// <summary>نقاب زوایای خارج از پاهنای هر دو شیار (X و Y).</summary>
-    private static bool[] BuildPhillipsTopMask(double[] angles, double alpha)
-    {
-        var mask = new bool[angles.Length];
-        for (var i = 0; i < angles.Length; i++)
-        {
-            var a = angles[i];
-            var inXBand = a <= alpha || a >= 2.0 * Math.PI - alpha ||
-                          (a >= Math.PI - alpha && a <= Math.PI + alpha);
-            var inYBand = (a >= Math.PI / 2.0 - alpha && a <= Math.PI / 2.0 + alpha) ||
-                          (a >= 3.0 * Math.PI / 2.0 - alpha && a <= 3.0 * Math.PI / 2.0 + alpha);
-            mask[i] = !inXBand && !inYBand;
-        }
-        return mask;
     }
 
     /// <summary>کف شیار تکی: کپسول — همهٔ رأس‌ها از حلقهٔ کف؛ پیمایش ساعتگرد (نرمال −Z).</summary>
@@ -348,7 +336,11 @@ public static class SlotCutter
         throw new InvalidOperationException($"زوایای ویژهٔ شیار ({targetAngle:0.####} رادیان) در شبکه نیست.");
     }
 
-    /// <summary>نقاط کمان زوایای شبکه در بازهٔ [from, to] — شامل هر دو سر؛ جهت پیمایش حفظ می‌شود.</summary>
+    /// <summary>نقاط کمان زوایای شبکه در بازهٔ [from, to] — شامل هر دو سر؛ با پشتیبانی عبور از صفر.</summary>
+    /// <remarks>
+    /// جهت از ترتیب ورودی تعیین می‌شود (نزولی یعنی from > to). زاویه‌های منفی به [0, 2π)
+    /// نگاشت می‌شوند و نزولیِ عبورکننده از صفر به دو بخش (تا ۰ و از ۲π) شکسته می‌شود.
+    /// </remarks>
     private static void AddArc(
         List<(double X, double Y, int V)> polygon,
         double[] angles,
@@ -357,25 +349,71 @@ public static class SlotCutter
         double fromAngle,
         double toAngle)
     {
-        if (toAngle >= fromAngle)
+        var descending = toAngle < fromAngle;
+        var from = Norm(fromAngle);
+        var to = Norm(toAngle);
+
+        if (!descending)
         {
-            for (var i = 0; i < angles.Length; i++)
+            if (to >= from)
             {
-                if (angles[i] < fromAngle - 1e-12) continue;
-                if (angles[i] > toAngle + 1e-12) break;
-                polygon.Add((radius * Math.Cos(angles[i]), radius * Math.Sin(angles[i]), ring[i]));
+                for (var i = 0; i < angles.Length; i++)
+                {
+                    if (angles[i] < from - 1e-12) continue;
+                    if (angles[i] > to + 1e-12) break;
+                    polygon.Add((radius * Math.Cos(angles[i]), radius * Math.Sin(angles[i]), ring[i]));
+                }
+            }
+            else
+            {
+                // صعودی با عبور از ۲π: از from تا 2π سپس از ۰ تا to.
+                for (var i = 0; i < angles.Length; i++)
+                {
+                    if (angles[i] < from - 1e-12) continue;
+                    polygon.Add((radius * Math.Cos(angles[i]), radius * Math.Sin(angles[i]), ring[i]));
+                }
+                for (var i = 0; i < angles.Length; i++)
+                {
+                    if (angles[i] > to + 1e-12) break;
+                    polygon.Add((radius * Math.Cos(angles[i]), radius * Math.Sin(angles[i]), ring[i]));
+                }
             }
         }
         else
         {
-            // نزولی: از زاویهٔ بزرگ به کوچک (پیمایش ساعتگرد چندضلعی‌های این کلاس).
-            for (var i = angles.Length - 1; i >= 0; i--)
+            if (from > to)
             {
-                if (angles[i] > fromAngle + 1e-12) continue;
-                if (angles[i] < toAngle - 1e-12) break;
-                polygon.Add((radius * Math.Cos(angles[i]), radius * Math.Sin(angles[i]), ring[i]));
+                // نزولی ساده.
+                for (var i = angles.Length - 1; i >= 0; i--)
+                {
+                    if (angles[i] > from + 1e-12) continue;
+                    if (angles[i] < to - 1e-12) break;
+                    polygon.Add((radius * Math.Cos(angles[i]), radius * Math.Sin(angles[i]), ring[i]));
+                }
+            }
+            else
+            {
+                // نزولی با عبور از صفر: از from نزولی تا ۰، سپس از ۲π نزولی تا to.
+                for (var i = angles.Length - 1; i >= 0; i--)
+                {
+                    if (angles[i] > from + 1e-12) continue;
+                    polygon.Add((radius * Math.Cos(angles[i]), radius * Math.Sin(angles[i]), ring[i]));
+                }
+                for (var i = angles.Length - 1; i >= 0; i--)
+                {
+                    if (angles[i] < to - 1e-12) break;
+                    polygon.Add((radius * Math.Cos(angles[i]), radius * Math.Sin(angles[i]), ring[i]));
+                }
             }
         }
+    }
+
+    /// <summary>نرمال‌سازی زاویه به [0, 2π).</summary>
+    private static double Norm(double angle)
+    {
+        var a = angle % (2.0 * Math.PI);
+        if (a < 0) a += 2.0 * Math.PI;
+        return a;
     }
 
     /// <summary>چندضلعی مسطح افقی را مثلث‌بندی می‌کند؛ clockwise یعنی نرمال −Z.</summary>

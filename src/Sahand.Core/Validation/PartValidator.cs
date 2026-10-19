@@ -25,6 +25,24 @@ public static class PartValidator
         CheckNonNegative(result, "HeadTopChamferMm", bolt.HeadTopChamferMm, "پخ سر");
         if (result.HasErrors && !threadErrorsBefore) return result;
 
+        // ماتریس پشتیبانی سر×محرک در این نسخه (محدودیت‌ها صادقانه رد می‌شوند، نه دکمهٔ بی‌عمل).
+        if (bolt.Head == HeadStyle.Hex && bolt.Drive is DriveStyle.Slot or DriveStyle.Phillips)
+            result.AddError("Drive",
+                "شیار روی سر شش‌گوش در این نسخه پشتیبانی نمی‌شود (در برنامهٔ توسعه). محرک «بدون» یا «آلن» را انتخاب کنید.");
+
+        if (bolt.Head is HeadStyle.FlatCountersunk or HeadStyle.Pan && bolt.Drive != DriveStyle.None)
+            result.AddError("Drive",
+                $"محرک روی سر «{bolt.Head}» در این نسخه پشتیبانی نمی‌شود (در برنامهٔ توسعه). سر استوانه‌ای آلن را انتخاب کنید.");
+
+        // سر خزینه: ظرفیت مخروط باید رویهٔ بالایی را بزرگ‌تر از ساق نگه دارد (گارد هندسی سازنده هم هست).
+        if (bolt.Head == HeadStyle.FlatCountersunk && bolt.HeadDiameterMm is { } headD)
+        {
+            var topRadius = headD / 2.0 - bolt.HeadHeightMm * Math.Tan(bolt.CountersunkAngleDegrees / 2.0 * Math.PI / 180.0);
+            if (topRadius <= bolt.Thread.NominalDiameterMm / 2.0)
+                result.AddError("HeadHeightMm",
+                    $"ارتفاع سر خزینه ({bolt.HeadHeightMm:0.###}mm) برای قطر سر {headD:0.###}mm و زاویهٔ {bolt.CountersunkAngleDegrees:0.#}° بیش از حد بزرگ است؛ رویهٔ بالایی از ساق کوچک‌تر می‌شود. ارتفاع را کم یا قطر سر/زاویه را زیاد کنید.");
+        }
+
         // محرک آلن فقط روی سرهایی معنا دارد که حفره می‌پذیرند.
         if (bolt.Drive == DriveStyle.HexSocket)
         {

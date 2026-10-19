@@ -252,12 +252,14 @@ public static class Commands
         var diameter = ParseDouble(args, "--diameter", spec.NominalDiameterMm);
         var pitch = ParseDouble(args, "--pitch", spec.PitchMm);
         var length = ParseDouble(args, "--length", 20.0);
+        var head = ParseEnum<HeadStyle>(args, "--head", HeadStyle.Hex);
+        var drive = ParseEnum<DriveStyle>(args, "--drive", DriveStyle.None);
 
         var bolt = new BoltSpec
         {
             Name = args.GetValueOrDefault("--name", $"پیچ {size}×{length:0.#}"),
-            Head = ParseEnum<HeadStyle>(args, "--head", HeadStyle.Hex),
-            Drive = ParseEnum<DriveStyle>(args, "--drive", DriveStyle.None),
+            Head = head,
+            Drive = drive,
             Thread = spec with
             {
                 NominalDiameterMm = diameter,
@@ -267,8 +269,30 @@ public static class Commands
                 ModelingMode = args.ContainsKey("--simplified") ? ThreadModelingMode.Simplified : ThreadModelingMode.RealHelical,
             },
             LengthUnderHeadMm = length,
-            HeadHeightMm = ParseDouble(args, "--head-height", diameter * 0.65),
-            HeadAcrossFlatsMm = ParseDouble(args, "--across-flats", diameter * 1.55),
+            // ارتفاع سر خزینه باید با ظرفیت مخروط (قطر سر − قطر ساق) سازگار باشد؛ پیش‌فرض محافظه‌کارانه.
+            HeadHeightMm = head == HeadStyle.FlatCountersunk
+                ? ParseDouble(args, "--head-height", Math.Max(diameter * 0.375, 0.5))
+                : ParseDouble(args, "--head-height", diameter * 0.65),
+            HeadAcrossFlatsMm = head == HeadStyle.Hex
+                ? ParseDouble(args, "--across-flats", diameter * 1.55)
+                : null,
+            HeadDiameterMm = head is HeadStyle.SocketCap or HeadStyle.Pan
+                ? ParseDouble(args, "--head-diameter", diameter * 1.55)
+                : head == HeadStyle.FlatCountersunk
+                    ? ParseDouble(args, "--head-diameter", diameter * 2.0)
+                    : null,
+            HexSocketAcrossFlatsMm = drive == DriveStyle.HexSocket
+                ? ParseDouble(args, "--socket", diameter * 0.55)
+                : null,
+            HexSocketDepthMm = drive == DriveStyle.HexSocket
+                ? ParseDouble(args, "--socket-depth", diameter * 0.35)
+                : null,
+            SlotWidthMm = drive is DriveStyle.Slot or DriveStyle.Phillips
+                ? ParseDouble(args, "--slot-width", diameter * 0.18)
+                : null,
+            SlotDepthMm = drive is DriveStyle.Slot or DriveStyle.Phillips
+                ? ParseDouble(args, "--slot-depth", diameter * 0.15)
+                : null,
             TipChamferMm = ParseDouble(args, "--tip-chamfer", pitch * 0.6),
         };
 
