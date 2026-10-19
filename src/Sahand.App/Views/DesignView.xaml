@@ -24,10 +24,15 @@
                     </StackPanel>
                     <StackPanel Orientation="Horizontal" Margin="0,4">
                         <TextBlock Text="خانوادهٔ رزوه:" Width="110" VerticalAlignment="Center"
-                                   ToolTip="متریک (ISO 261) یا اینچی UNC (ASME B1.1) — یادداشت منبع کنار اندازهٔ کاتالوگ نمایش داده می‌شود"/>
+                                   ToolTip="هفت خانوادهٔ کاتالوگی (گسترش ۰٫۳٫۰) — یادداشت منبع کنار اندازهٔ کاتالوگ نمایش داده می‌شود"/>
                         <ComboBox x:Name="FamilyBox" Width="180" SelectionChanged="OnFamilyChanged">
                             <ComboBoxItem Content="متریک ISO" Tag="IsoMetric" IsSelected="True"/>
-                            <ComboBoxItem Content="اینچی UNC" Tag="Unified"/>
+                            <ComboBoxItem Content="اینچی UNC/UNF" Tag="Unified"/>
+                            <ComboBoxItem Content="ویتوورث BSW/BSF" Tag="Whitworth"/>
+                            <ComboBoxItem Content="لوله‌ای NPT مخروطی" Tag="Npt"/>
+                            <ComboBoxItem Content="لوله‌ای BSPP موازی" Tag="Bsp"/>
+                            <ComboBoxItem Content="ذوزنقه‌ای ISO Tr" Tag="IsoTrapezoidal"/>
+                            <ComboBoxItem Content="ACME اینچی" Tag="Acme"/>
                         </ComboBox>
                     </StackPanel>
                     <StackPanel Orientation="Horizontal" Margin="0,4">
@@ -92,6 +97,7 @@
                         <ComboBox x:Name="DriveBox" Width="180">
                             <ComboBoxItem Content="بدون محرک" Tag="None" IsSelected="True"/>
                             <ComboBoxItem Content="حفرهٔ آلن" Tag="HexSocket"/>
+                            <ComboBoxItem Content="حفرهٔ تورکس (شش‌پر)" Tag="Torx"/>
                             <ComboBoxItem Content="شیار تخت" Tag="Slot"/>
                             <ComboBoxItem Content="شیار صلیبی (بر پایهٔ فرم فیلیپس)" Tag="Phillips"/>
                         </ComboBox>
