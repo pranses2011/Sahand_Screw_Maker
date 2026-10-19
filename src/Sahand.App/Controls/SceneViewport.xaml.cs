@@ -12,13 +12,20 @@ namespace Sahand.App.Controls;
 /// </summary>
 /// <remarks>
 /// قرارداد جهت (سند ۷-۵): محور قطعه Z است؛ صحنه با Y-بالا نمایش داده می‌شود و مش با
-/// نگاشت (x, z, −y) به صحنه می‌آید تا نوک قطعه رو به بالا باشد. برای سایه‌روشن تختِ
-/// قطعات مهندسی، رأس‌ها per-face تکرار و نرمال وجهی صریح داده می‌شوند (بدون smooth shading).
+/// نگاشت (x, z, −y) به صحنه می‌آید تا نوک قطعه رو به بالا باشد.
+/// کیفیت نمایش (بهبود ۰٫۳٫۰): نرمال‌های راسی «هموارِ آگاه از لبه» — در هر رأس، وجه‌های
+/// همسایه با نرمالِ نزدیک (اختلاف زیر آستانهٔ ۳۵ درجه) خوشه می‌شوند و میانگینِ وزنی
+/// مساحت به گوشه‌های همان خوشه می‌رسد؛ نتیجه: سطوح منحنی (ساق/رزوه) صاف و درخشان دیده
+/// می‌شوند و لبه‌های تیز (گوشهٔ شش‌گوش، دیوارهٔ شیار) تیز می‌مانند. متریال با لایهٔ
+/// Specular فلزی و نورپردازی سه‌نقطه‌ای (کلید/پرکننده/لبه) + سایهٔ نرمِ زمین کامل می‌شود.
 /// ساخت مش سنگین پیش از این کنترل و در پس‌زمینه انجام می‌شود (سند ۳-۷)؛ این کنترل
 /// فقط نمایش است. هیچ وابستگی رندر بیرونی ندارد — کاملاً آفلاین.
 /// </remarks>
 public partial class SceneViewport : UserControl
 {
+    // آستانهٔ «تیزی» لبه — اختلاف نرمال وجه‌های همسایه بالای این زاویه، لبهٔ تیز می‌ماند.
+    private const double CreaseCosThreshold = 0.81915; // cos(35°)
+
     // حالت مدار کروی دوربین حول نقطهٔ هدف.
     private double _orbitTheta = 0.55;  // زاویهٔ افقی (رادیان).
     private double _orbitPhi = 1.05;    // زاویهٔ عمودی از محور بالا (رادیان).
@@ -47,7 +54,8 @@ public partial class SceneViewport : UserControl
     }
 
     /// <summary>
-    /// مش را با سایه‌روشن تخت نمایش می‌دهد؛ مش null صحنه را خالی می‌کند.
+    /// مش را با سایه‌روشن هموارِ آگاه از لبه، متریال فلزی و سایهٔ زمین نمایش می‌دهد؛
+    /// مش null صحنه را خالی می‌کند.
     /// </summary>
     public void ShowMesh(Mesh? mesh)
     {
@@ -55,30 +63,42 @@ public partial class SceneViewport : UserControl
 
         if (mesh is { Vertices.Length: > 0, Triangles.Length: > 0 })
         {
-            // رأس‌های per-face (۳×تکرار) برای نرمال وجهی صریح — قطعات مهندسی تخت‌روشن دیده می‌شوند.
-            var positions = new Point3D[mesh.Triangles.Length * 3];
-            var normals = new Vector3D[mesh.Triangles.Length * 3];
+            var tri = mesh.Triangles;
+            var faceCount = tri.Length;
 
-            for (var i = 0; i < mesh.Triangles.Length; i++)
+            // ۱) موقعیت گوشه‌ها + نرمال وجهی + مساحت وجه‌ها (در مختصات صحنه).
+            var positions = new Point3D[faceCount * 3];
+            var normals = new Vector3D[faceCount * 3];
+            var faceNormals = new Vector3D[faceCount];
+            var faceAreas = new double[faceCount];
+
+            for (var i = 0; i < faceCount; i++)
             {
-                var t = mesh.Triangles[i];
+                var t = tri[i];
                 var a = MapToScene(mesh.Vertices[t.A]);
                 var b = MapToScene(mesh.Vertices[t.B]);
                 var c = MapToScene(mesh.Vertices[t.C]);
 
-                // نرمال وجه از winding بیرونی؛ جهت صحنه پس از نگاشت محاسبه می‌شود.
-                var normal = Vector3D.CrossProduct(b - a, c - a);
-                normal.Normalize();
+                var cross = Vector3D.CrossProduct(b - a, c - a);
+                var area = 0.5 * cross.Length;
+                var normal = cross;
+                if (normal.LengthSquared > 1e-20) normal.Normalize();
+
+                faceNormals[i] = normal;
+                faceAreas[i] = area;
 
                 positions[i * 3] = a;
                 positions[i * 3 + 1] = b;
                 positions[i * 3 + 2] = c;
+                // مقدار اولیه = نرمال وجهی؛ خوشه‌های هموار آن را بازنویسی می‌کنند.
                 normals[i * 3] = normal;
                 normals[i * 3 + 1] = normal;
                 normals[i * 3 + 2] = normal;
             }
 
-            var indices = new Int32Collection(mesh.Triangles.Length * 3);
+            SmoothNormals(mesh, tri, faceNormals, faceAreas, positions, normals);
+
+            var indices = new Int32Collection(faceCount * 3);
             for (var i = 0; i < positions.Length; i++) indices.Add(i);
 
             var geometry = new MeshGeometry3D
@@ -88,8 +108,21 @@ public partial class SceneViewport : UserControl
                 TriangleIndices = indices,
             };
 
-            var material = new DiffuseMaterial(new SolidColorBrush(MeshColor)) { Color = MeshColor };
-            group.Children.Add(new GeometryModel3D(geometry, material));
+            // ۲) متریال فلزی: پخش + بازتاب ویژه (براقیت فولاد).
+            var diffuse = new DiffuseMaterial(new SolidColorBrush(MeshColor))
+            {
+                AmbientColor = Color.FromRgb(
+                    (byte)(MeshColor.R * 0.55),
+                    (byte)(MeshColor.G * 0.55),
+                    (byte)(MeshColor.B * 0.55)),
+            };
+            var specular = new SpecularMaterial(
+                new SolidColorBrush(Color.FromRgb(0xD6, 0xDE, 0xE6)), 34.0);
+            var material = new MaterialGroup { Children = { diffuse, specular } };
+            group.Children.Add(new GeometryModel3D(geometry, material) { BackMaterial = material });
+
+            // ۳) سایهٔ نرم زمین — یک صفحهٔ شفاف با گرادیان شعاعی زیر قطعه.
+            AddGroundShadow(group, mesh);
 
             // تنظیم هدف/شعاع مدار بر اساس جعبهٔ محیطی (در مختصات صحنه).
             var (minX, minY, minZ, maxX, maxY, maxZ) = mesh.Bounds();
@@ -97,7 +130,7 @@ public partial class SceneViewport : UserControl
                 (minX + maxX) / 2, (minY + maxY) / 2, (minZ + maxZ) / 2));
             _target = new Point3D(centerScene.X, centerScene.Y, centerScene.Z);
             var size = Math.Max(Math.Max(maxX - minX, maxY - minY), maxZ - minZ);
-            _orbitRadius = Math.Max(size * 2.0, 10);
+            _orbitRadius = Math.Max(size * 2.2, 10);
         }
 
         PartModel.Content = group;
@@ -106,6 +139,150 @@ public partial class SceneViewport : UserControl
 
     /// <summary>خالی‌کردن صحنه.</summary>
     public void Clear() => PartModel.Content = null;
+
+    /// <summary>
+    /// نرمال‌های راسی هموارِ آگاه از لبه را می‌سازد و در آرایهٔ <paramref name="normals"/>
+    /// (per-corner) می‌نویسد.
+    /// </summary>
+    /// <remarks>
+    /// الگوریتم: نگاشت رأس → گوشه‌های incident؛ سپس در هر رأس، وجه‌های incident با
+    /// نرمال‌های نزدیک (dot ≥ آستانه) به خوشه‌های هموار گروه‌بندی می‌شوند (اتصال انتقالی،
+    /// حریصانه) و میانگینِ وزنی به مساحتِ هر خوشه به گوشه‌های عضو آن می‌رسد. لبهٔ تیز
+    /// (اختلاف > آستانه) نرمال جدا می‌ماند و قطعه تیز دیده می‌شود.
+    /// </remarks>
+    private static void SmoothNormals(
+        Mesh mesh,
+        MeshTriangle[] tri,
+        Vector3D[] faceNormals,
+        double[] faceAreas,
+        Point3D[] positions,
+        Vector3D[] normals)
+    {
+        var vertexCount = mesh.Vertices.Length;
+
+        // گوشه‌های incident هر رأس (اندیس آرایهٔ positions = 3×وجه + ۰..۲).
+        var incident = new List<int>[vertexCount];
+        for (var corner = 0; corner < positions.Length; corner++)
+        {
+            var vertex = corner % 3 == 0
+                ? tri[corner / 3].A
+                : corner % 3 == 1 ? tri[corner / 3].B : tri[corner / 3].C;
+            (incident[vertex] ??= []).Add(corner);
+        }
+
+        for (var v = 0; v < vertexCount; v++)
+        {
+            var corners = incident[v];
+            if (corners is not { Count: > 1 }) continue;
+
+            // وجه‌های incident این رأس — هر وجه حداکثر یک‌بار (مثلث غیرمضرس).
+            var faces = new int[corners.Count];
+            for (var i = 0; i < corners.Count; i++) faces[i] = corners[i] / 3;
+
+            var assigned = new bool[faces.Length];
+
+            for (var seed = 0; seed < faces.Length; seed++)
+            {
+                if (assigned[seed]) continue;
+
+                // خوشهٔ جدید — رشد انتقالی با آستانهٔ زاویه.
+                var cluster = new List<int> { seed };
+                assigned[seed] = true;
+                bool grew;
+                do
+                {
+                    grew = false;
+                    for (var i = 0; i < faces.Length; i++)
+                    {
+                        if (assigned[i]) continue;
+                        var belongs = false;
+                        foreach (var member in cluster)
+                        {
+                            if (Vector3D.DotProduct(faceNormals[faces[i]], faceNormals[faces[member]])
+                                >= CreaseCosThreshold)
+                            {
+                                belongs = true;
+                                break;
+                            }
+                        }
+
+                        if (!belongs) continue;
+                        cluster.Add(i);
+                        assigned[i] = true;
+                        grew = true;
+                    }
+                }
+                while (grew);
+
+                // میانگین وزنی به مساحت در سرتاسر خوشه.
+                var sum = new Vector3D();
+                foreach (var member in cluster)
+                {
+                    var f = faces[member];
+                    sum += faceNormals[f] * faceAreas[f];
+                }
+
+                if (sum.LengthSquared < 1e-20) continue; // وجه‌های مضرس — نرمال وجهی می‌ماند.
+                sum.Normalize();
+
+                foreach (var member in cluster)
+                    normals[corners[member]] = sum;
+            }
+        }
+    }
+
+    /// <summary>صفحهٔ سایهٔ نرم زیر قطعه — گرادیان شعاعی شفاف روی صفحهٔ افقی.</summary>
+    private static void AddGroundShadow(Model3DGroup group, Mesh mesh)
+    {
+        var (minX, minY, minZ, maxX, maxY, maxZ) = mesh.Bounds();
+
+        // مرز صحنه: X همان X قطعه است؛ «بالا» در صحنه = محور Z قطعه (نگاشت (x,z,−y)).
+        var sceneMinY = minZ;
+        var sceneMaxX = maxX;
+        var sceneMinX = minX;
+        var sceneMaxZ = -minY;
+        var sceneMinZ = -maxY;
+
+        var size = Math.Max(Math.Max(maxX - minX, maxY - minY), maxZ - minZ);
+        var groundY = sceneMinY - Math.Max(size * 0.02, 0.15);
+        var cx = (sceneMinX + sceneMaxX) / 2.0;
+        var cz = (sceneMinZ + sceneMaxZ) / 2.0;
+
+        var xSpan = sceneMaxX - sceneMinX;
+        var zSpan = sceneMaxZ - sceneMinZ;
+        var half = Math.Max(Math.Max(xSpan, zSpan) * 0.72, size * 0.25);
+
+        var brush = new RadialGradientBrush
+        {
+            Center = new Point(0.5, 0.5),
+            GradientOrigin = new Point(0.5, 0.5),
+            RadiusX = 0.5,
+            RadiusY = 0.5,
+            GradientStops =
+            {
+                new GradientStop(Color.FromArgb(0xA6, 0x00, 0x00, 0x00), 0.0),
+                new GradientStop(Color.FromArgb(0x54, 0x00, 0x00, 0x00), 0.55),
+                new GradientStop(Color.FromArgb(0x00, 0x00, 0x00, 0x00), 1.0),
+            },
+        };
+
+        // گوشه‌ها پادساعتگرد از بالا (نرمال +Y): p0→p2→p1 و p0→p3→p2.
+        var p0 = new Point3D(cx - half, groundY, cz - half);
+        var p1 = new Point3D(cx + half, groundY, cz - half);
+        var p2 = new Point3D(cx + half, groundY, cz + half);
+        var p3 = new Point3D(cx - half, groundY, cz + half);
+        var up = new Vector3D(0, 1, 0);
+
+        var geometry = new MeshGeometry3D
+        {
+            Positions = new Point3DCollection { p0, p1, p2, p3 },
+            Normals = new Vector3DCollection { up, up, up, up },
+            TriangleIndices = new Int32Collection { 0, 2, 1, 0, 3, 2 },
+            TextureCoordinates = new PointCollection { new(0, 1), new(1, 1), new(1, 0), new(0, 0) },
+        };
+
+        group.Children.Add(new GeometryModel3D(geometry, new DiffuseMaterial(brush)));
+    }
 
     /// <summary>نگاشت مختصات قطعه به مختصات صحنه (محور قطعه Z → بالای صحنه).</summary>
     private static Point3D MapToScene(MeshVertex v) => new(v.X, v.Z, -v.Y);
