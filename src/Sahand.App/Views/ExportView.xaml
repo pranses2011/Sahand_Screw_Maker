@@ -31,14 +31,20 @@
                 <StackPanel>
                     <StackPanel Orientation="Horizontal" Margin="0,4">
                         <TextBlock Text="کیفیت مش:" Width="150" VerticalAlignment="Center"
-                                   ToolTip="دقیق (پیش‌فرض ۰٫۳٫۰): ۱۹۲ بخش زاویه‌ای و گام z ریزتر — رزوهٔ نرم‌تر در فایل؛ سنگین‌تر از متعادل"/>
-                        <ComboBox x:Name="QualityBox" Width="180">
+                                   ToolTip="قطعه با کیفیت انتخابی دوباره ساخته می‌شود؛ رقم‌ها نشان‌دهندهٔ بخش زاویه‌ای دور کامل و ریزتر بودن گام مارپیچ است"/>
+                        <ComboBox x:Name="QualityBox" Width="210" SelectionChanged="OnQualityChanged">
                             <ComboBoxItem Content="پیش‌نویس (کم‌جزئیات)" Tag="Draft"/>
                             <ComboBoxItem Content="متعادل" Tag="Balanced"/>
                             <ComboBoxItem Content="دقیق (پیش‌فرض)" Tag="Fine" IsSelected="True"/>
                             <ComboBoxItem Content="بسیار دقیق (سنگین)" Tag="VeryFine"/>
+                            <ComboBoxItem Content="فوق‌دقیق (خیلی سنگین)" Tag="Ultra"/>
+                            <ComboBoxItem Content="حدی — بیشترین نرمی (سنگین‌ترین)" Tag="Extreme"/>
                         </ComboBox>
                     </StackPanel>
+                    <TextBlock x:Name="QualityNoteText" Text=""
+                               Foreground="{StaticResource Brush.TextSecondary}"
+                               FontSize="{StaticResource FontSize.Small}" TextWrapping="Wrap"
+                               Margin="158,2,0,6"/>
                     <StackPanel Orientation="Horizontal" Margin="0,4">
                         <TextBlock Text="واحد فایل:" Width="150" VerticalAlignment="Center"/>
                         <ComboBox x:Name="UnitBox" Width="180">

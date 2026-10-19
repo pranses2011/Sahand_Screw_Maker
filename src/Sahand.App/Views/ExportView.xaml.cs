@@ -3,6 +3,7 @@ using System.Windows.Controls;
 using Microsoft.Win32;
 using Sahand.Core.Units;
 using Sahand.Exporters;
+using Sahand.Geometry.Builders;
 using Sahand.Geometry.Meshing;
 
 namespace Sahand.App.Views;
@@ -27,6 +28,9 @@ public partial class ExportView : UserControl
         _owner = owner;
         BuildFormatList();
         UpdateDefaultPath();
+        // وضعیت قطعی پس از بارگذاری کامل XAML — رخداد زودهنگام SelectionChanged (حین InitializeComponent)
+        // با گارد null کنار گذاشته می‌شود (الگوی رفع کرش ۰٫۲٫۰).
+        UpdateQualityNote();
     }
 
     /// <summary>ساخت فهرست فرمت‌ها از ماتریس قابلیت — منبع واحد حقیقت.</summary>
@@ -125,11 +129,11 @@ public partial class ExportView : UserControl
 
     private async void OnExportClick(object sender, RoutedEventArgs e)
     {
-        var mesh = PrintRadio.IsChecked == true
-            ? _owner.Session.PrintMesh ?? _owner.Session.NominalMesh
-            : _owner.Session.NominalMesh;
+        var session = _owner.Session;
 
-        if (mesh is null)
+        // نسخهٔ چاپی فقط اگر ساخته شده باشد؛ در غیر این صورت برگشت به اسمی.
+        var wantsPrint = PrintRadio.IsChecked == true;
+        if (session.NominalMesh is null && session.PrintMesh is null)
         {
             MessageBox.Show("مدلی برای خروجی وجود ندارد؛ ابتدا از «طراحی قطعه» مدل بسازید.",
                 "مدل موجود نیست", MessageBoxButton.OK, MessageBoxImage.Information);
@@ -165,6 +169,49 @@ public partial class ExportView : UserControl
             }
         }
 
+        var quality = ParseQuality();
+        var qualityTag = ToMeshPreset(quality);
+
+        // انتخاب نسخهٔ خروجی: نسخهٔ چاپی از مش موجود PrintMesh؛ اسمی از Document با کیفیت انتخابی.
+        Mesh? mesh;
+        var rebuilt = false;
+        if (wantsPrint && session.PrintMesh is not null)
+        {
+            mesh = session.PrintMesh;
+        }
+        else if (session.Document is not null)
+        {
+            // بازسازی با کیفیت انتخابی — کیفیت انتخابی واقعاً روی فایل اعمال می‌شود (گام ۰٫۴٫۰):
+            // مش Session با کیفیت ساخت پیش‌نمایش ساخته شده؛ خروجی دوباره ساخته می‌شود.
+            // snapshot از سند برای ایمنی closure در برابر تغییر هم‌زمان توسط کاربر.
+            var doc = session.Document;
+            ResultText.Text = $"وضعیت: در حال ساخت هندسه با کیفیت «{QualityLabel(quality)}»…";
+            ResultDetailsText.Text = "قطعه با تفکیک انتخابی بازسازی می‌شود — برای کیفیت‌های سنگین چند لحظه صبر کنید.";
+            try
+            {
+                mesh = await System.Threading.Tasks.Task.Run(() =>
+                    PartMeshFactory.Build(doc, qualityTag));
+                rebuilt = true;
+            }
+            catch (Exception ex)
+            {
+                ResultText.Text = "وضعیت: خروجی ناموفق ✗";
+                ResultDetailsText.Text = $"بازسازی مش با کیفیت انتخابی ناموفق بود:\n{ex.Message}";
+                return;
+            }
+        }
+        else
+        {
+            mesh = session.NominalMesh;
+        }
+
+        if (mesh is null || mesh.Triangles.Length == 0)
+        {
+            MessageBox.Show("مدلی برای خروجی وجود ندارد؛ ابتدا از «طراحی قطعه» مدل بسازید.",
+                "مدل موجود نیست", MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+
         ResultText.Text = "وضعیت: در حال نوشتن فایل…";
         ResultDetailsText.Text = string.Empty;
 
@@ -197,7 +244,13 @@ public partial class ExportView : UserControl
 
             ResultText.Text = $"وضعیت: خروجی موفق ✓ — {result.Format} ({result.FileBytes:N0} بایت)";
             ResultDetailsText.Text =
-                $"مسیر: {result.FilePath}\nواحد ثبت‌شده: {result.UnitNote}\nکیفیت: {result.Quality}";
+                $"مسیر: {result.FilePath}\nواحد ثبت‌شده: {result.UnitNote}\nکیفیت: {result.Quality}" +
+                (rebuilt
+                    ? $"\nوجه‌های فایل: {mesh.Triangles.Length:N0} — رأس‌ها: {mesh.Vertices.Length:N0} (بازسازی با تفکیک انتخابی)"
+                    : "\nنسخهٔ چاپی: مش موجود به‌عنوان‌هست استفاده شد (کیفیت ساخت نسخهٔ چاپی).") +
+                (qualityTag is MeshQualityPreset.Ultra or MeshQualityPreset.Extreme
+                    ? "\nکیفیت سنگین: فایل بزرگ است؛ برای چاپ قطعات ریز/نمایش نهایی مناسب است."
+                    : "");
             if (result.Warnings.Count > 0)
             {
                 ResultDetailsText.Text += "\nهشدارها:\n• " + string.Join("\n• ", result.Warnings);
@@ -272,6 +325,48 @@ public partial class ExportView : UserControl
         "Draft" => ExportQualityPreset.Draft,
         "Fine" => ExportQualityPreset.Fine,
         "VeryFine" => ExportQualityPreset.VeryFine,
+        "Ultra" => ExportQualityPreset.Ultra,
+        "Extreme" => ExportQualityPreset.Extreme,
         _ => ExportQualityPreset.Balanced,
+    };
+
+    /// <summary>نگاشت preset گزارش خروجی به preset واقعی موتور مش.</summary>
+    private static MeshQualityPreset ToMeshPreset(ExportQualityPreset preset) => preset switch
+    {
+        ExportQualityPreset.Draft => MeshQualityPreset.Draft,
+        ExportQualityPreset.Fine => MeshQualityPreset.Fine,
+        ExportQualityPreset.VeryFine => MeshQualityPreset.VeryFine,
+        ExportQualityPreset.Ultra => MeshQualityPreset.Ultra,
+        ExportQualityPreset.Extreme => MeshQualityPreset.Extreme,
+        _ => MeshQualityPreset.Balanced,
+    };
+
+    /// <summary>برچسب فارسی کیفیت برای پیام وضعیت.</summary>
+    private static string QualityLabel(ExportQualityPreset preset) => preset switch
+    {
+        ExportQualityPreset.Draft => "پیش‌نویس",
+        ExportQualityPreset.Fine => "دقیق",
+        ExportQualityPreset.VeryFine => "بسیار دقیق",
+        ExportQualityPreset.Ultra => "فوق‌دقیق",
+        ExportQualityPreset.Extreme => "حدی",
+        _ => "متعادل",
+    };
+
+    /// <summary>یادداشت راهنمای کیفیت انتخابی — بخش‌های زاویه‌ای و سنگینی هر سطح.</summary>
+    private void OnQualityChanged(object sender, SelectionChangedEventArgs e)
+    {
+        // رخداد زودهنگام حین InitializeComponent (آیتم Fine دارای IsSelected است) — گارد null.
+        if (QualityNoteText is null) return;
+        UpdateQualityNote();
+    }
+
+    private void UpdateQualityNote() => QualityNoteText.Text = ParseQuality() switch
+    {
+        ExportQualityPreset.Draft => "۴۸ بخش زاویه‌ای — بازبینی سریع؛ رزوه درشت نمایش داده می‌شود.",
+        ExportQualityPreset.Fine => "۱۹۲ بخش زاویه‌ای — پیش‌فرض؛ تعادل نرمی و اندازهٔ فایل.",
+        ExportQualityPreset.VeryFine => "۳۲۰ بخش زاویه‌ای — رزوهٔ نرم؛ فایل و زمان ساخت سنگین‌تر.",
+        ExportQualityPreset.Ultra => "۵۱۲ بخش زاویه‌ای و گام مارپیچ ریزتر — نرمی عالی برای چاپ قطعات ریز؛ خیلی سنگین.",
+        ExportQualityPreset.Extreme => "۷۶۸ بخش زاویه‌ای و ریزترین گام — بیشترین نرمی قطعه؛ مناسب رندر/چاپ نهایی؛ سنگین‌ترین حالت.",
+        _ => "۹۶ بخش زاویه‌ای — تعادل سرعت و کیفیت.",
     };
 }
