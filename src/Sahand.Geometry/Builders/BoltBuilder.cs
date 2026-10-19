@@ -42,12 +42,14 @@ public static class BoltBuilder
         var length = spec.LengthUnderHeadMm;
         var topZ = -spec.HeadHeightMm;
 
-        // زوایای ویژهٔ شبکه: گوشه‌های شش‌گوش سر/آلن + خروج شیار.
+        // زوایای ویژهٔ شبکه: گوشه‌های شش‌گوش سر/آلن + خروج شیار + گذارهای تورکس.
         var specialAngles = new List<double>();
         if (spec.Head is HeadStyle.Hex && spec.HeadAcrossFlatsMm is > 0)
             specialAngles.AddRange(HexCornerAngles());
         if (spec.Drive == DriveStyle.HexSocket && spec.HexSocketAcrossFlatsMm is > 0)
             specialAngles.AddRange(HexCornerAngles());
+        if (spec.Drive == DriveStyle.Torx && spec.TorxAcrossLobesMm is > 0)
+            specialAngles.AddRange(TorxProfile.SpecialAngles(spec.TorxAcrossLobesMm.Value));
         if (spec.Drive is DriveStyle.Slot or DriveStyle.Phillips)
         {
             var headR = HeadFlatTopRadius(spec);
@@ -131,6 +133,7 @@ public static class BoltBuilder
             ?? throw new ArgumentException("سر شش‌گوش بدون عرض آچارخور قابل ساخت نیست.");
         var chamfer = Math.Min(spec.HeadTopChamferMm, spec.HeadHeightMm / 2.0);
         var hasSocket = spec.Drive == DriveStyle.HexSocket;
+        var hasTorx = spec.Drive == DriveStyle.Torx;
 
         // پخ فوقانی ۴۵ درجه: در z ∈ [topZ, topZ+پخ] شعاع به‌اندازهٔ فاصله تا topZ کم می‌شود.
         double RadiusAt(double theta, double z) =>
@@ -139,7 +142,7 @@ public static class BoltBuilder
         var levels = DedupLevels(topZ, topZ + chamfer, 0.0);
         var headRings = RadialSurface.AddOutwardSurface(
             mesh, grid, RadiusAt, levels,
-            capFirst: !hasSocket, // بدون حفره: درپوش کامل رویهٔ بالا.
+            capFirst: !hasSocket && !hasTorx, // بدون حفره: درپوش کامل رویهٔ بالا.
             capLast: false);
 
         if (hasSocket)
@@ -164,6 +167,17 @@ public static class BoltBuilder
 
             // رویهٔ بالای سر: حلقه بین حفرهٔ آلن و مرز شش‌گوشِ پخ‌خورده — نرمال −Z.
             RadialSurface.AddRingCap(mesh, socketRings[0], headRings[0], solidBelow: false);
+        }
+
+        if (hasTorx)
+        {
+            // گارد هندسی: پَرِ تورکس باید داخل مرزِ پخ‌خوردهٔ سر (کمینهٔ شعاع تخت) جا شود.
+            var nominalE = spec.TorxAcrossLobesMm
+                ?? throw new ArgumentException("حفرهٔ تورکس بدون قطر اسمی قابل ساخت نیست.");
+            if (nominalE / 2.0 >= af / 2.0 - chamfer)
+                throw new ArgumentException(
+                    "حفرهٔ تورکس از مرز داخلی سر شش‌گوش بزرگ‌تر است؛ قطر تورکس را کم یا عرض آچارخور را زیاد کنید.");
+            AddTorxPocket(mesh, spec, grid, topZ, headRings[0]);
         }
 
         // سطح اتکای سر: حلقه بین مرز ساق و مرز شش‌گوش در z=0.
@@ -203,7 +217,7 @@ public static class BoltBuilder
         var headRings = RadialSurface.AddOutwardSurface(
             mesh, grid, RadiusAt,
             DedupLevels(topZ, topZ + chamfer, 0.0),
-            capFirst: spec.Drive != DriveStyle.HexSocket, // بدون حفره: درپوش کامل.
+            capFirst: spec.Drive is not (DriveStyle.HexSocket or DriveStyle.Torx), // بدون حفره: درپوش کامل.
             capLast: false);
 
         if (spec.Drive == DriveStyle.HexSocket)
@@ -224,7 +238,49 @@ public static class BoltBuilder
             RadialSurface.AddRingCap(mesh, socketRings[0], headRings[0], solidBelow: false);
         }
 
+        if (spec.Drive == DriveStyle.Torx)
+        {
+            // گارد هندسی: پَرِ تورکس باید داخل مرز پخ‌خوردهٔ بالای سر جا شود.
+            var nominalE = spec.TorxAcrossLobesMm
+                ?? throw new ArgumentException("حفرهٔ تورکس بدون قطر اسمی قابل ساخت نیست.");
+            if (nominalE / 2.0 >= headR - chamfer)
+                throw new ArgumentException(
+                    "حفرهٔ تورکس از مرز سر بزرگ‌تر است؛ قطر تورکس را کم یا قطر سر را زیاد کنید.");
+            AddTorxPocket(mesh, spec, grid, topZ, headRings[0]);
+        }
+
         RadialSurface.AddRingCap(mesh, shankBottomRing, headRings[^1], solidBelow: true);
+    }
+
+    /// <summary>
+    /// حفرهٔ تورکس (شش‌پر) روی رویهٔ تختِ سر — همان الگوی حفرهٔ آلن با تابع شعاع تورکس.
+    /// </summary>
+    /// <remarks>گاردهای هندسی در PartValidator آمده‌اند؛ اینجا فقط گارد ساخت هست.
+    /// رویهٔ بالای سر (حلقهٔ بیرونی) باید پیشاپیش ساخته شده باشد و حلقهٔ headTopRing آن را می‌بندد.</remarks>
+    private static void AddTorxPocket(
+        MeshBuilder mesh,
+        BoltSpec spec,
+        AngularGrid grid,
+        double topZ,
+        int[] headTopRing)
+    {
+        var nominalE = spec.TorxAcrossLobesMm
+            ?? throw new ArgumentException("حفرهٔ تورکس بدون قطر اسمی قابل ساخت نیست.");
+        var depth = spec.TorxDepthMm
+            ?? throw new ArgumentException("حفرهٔ تورکس بدون عمق قابل ساخت نیست.");
+        if (depth >= spec.HeadHeightMm)
+            throw new ArgumentException("عمق حفرهٔ تورکس باید کمتر از ارتفاع سر باشد.");
+
+        // دیواره‌های عمودی حفره + کف — تابع شعاع تورکس مستقل از z (دیوارهٔ عمودی).
+        double TorxRadius(double theta, double z) => TorxProfile.RadiusAt(nominalE, theta);
+        var pocketRings = RadialSurface.AddInwardSurface(
+            mesh, grid, TorxRadius,
+            DedupLevels(topZ, topZ + depth),
+            capFirst: false,
+            capLast: true); // کف حفره: نرمال −Z.
+
+        // رویهٔ بالای سر: حلقه بین حفرهٔ تورکس و مرز سر — نرمال −Z.
+        RadialSurface.AddRingCap(mesh, pocketRings[0], headTopRing, solidBelow: false);
     }
 
     /// <summary>سر خزینه مخروطی — فقط بدون محرک در این نسخه (محدودیت مستندشده).</summary>
