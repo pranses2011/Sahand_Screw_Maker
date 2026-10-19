@@ -52,6 +52,11 @@ public partial class MainWindow : Window
         InitializeComponent();
         Services = ((App)Application.Current).Services;
 
+        // نمایش نسخهٔ در حال اجرا در عنوان پنجره (بازبینی ۰٫۲٫۰، D8) — از نسخهٔ اسمبلی خوانده می‌شود.
+        var version = GetType().Assembly.GetName().Version;
+        if (version is not null)
+            Title = $"{Title} — نسخهٔ {version.ToString(3)}";
+
         // شروع در «خانه».
         NavList.SelectedIndex = 0;
 
