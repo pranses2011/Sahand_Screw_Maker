@@ -52,20 +52,27 @@ public sealed record BoltSpec
     /// <summary>عمق حفرهٔ آلن برحسب میلی‌متر.</summary>
     public double? HexSocketDepthMm { get; init; }
 
-    /// <summary>قطر اسمی حفرهٔ تورکس (روی پَرها، E) برحسب میلی‌متر — فقط برای <see cref="DriveStyle.Torx"/> (گسترش ۰٫۳٫۰).</summary>
+    /// <summary>قطر اسمی حفرهٔ تورکس (روی پَرها، E) برحسب میلی‌متر — برای <see cref="DriveStyle.Torx"/>/<see cref="DriveStyle.SecurityTorx"/> و دیگر محرک‌های گلبرگی (پنتالوب/تری‌وینگ/تورک‌ست — گسترش ۰٫۵٫۰).</summary>
     public double? TorxAcrossLobesMm { get; init; }
 
-    /// <summary>عمق حفرهٔ تورکس برحسب میلی‌متر.</summary>
+    /// <summary>عمق حفرهٔ محرک گلبرگی (تورکس/پنتالوب/تری‌وینگ/تورک‌ست) برحسب میلی‌متر.</summary>
     public double? TorxDepthMm { get; init; }
 
     /// <summary>قطر پین مرکزی محرک امنیتی برحسب میلی‌متر — فقط برای <see cref="DriveStyle.PinHex"/> و <see cref="DriveStyle.SecurityTorx"/> (گسترش ۰٫۴٫۰).</summary>
     /// <remarks>پین از کف حفره بیرون می‌زند و آچار معمولی را قفل می‌کند؛ ابزار مخصوصِ گوددار لازم است.</remarks>
     public double? SecurityPinDiameterMm { get; init; }
 
-    /// <summary>پهنای شیار تخت/صلیبی برحسب میلی‌متر — فقط برای محرک شیاری.</summary>
+    /// <summary>قطر هر سوراخ محرک اسپنر/«چشم مار» برحسب میلی‌متر — فقط برای <see cref="DriveStyle.Spanner"/> (گسترش ۰٫۵٫۰).</summary>
+    /// <remarks>دو سوراخ گرد جدار‌دار؛ فاصلهٔ مراکز به‌طور خودکار ~۱٫۹ برابر قطر سوراخ انتخاب می‌شود.</remarks>
+    public double? SpannerHoleDiameterMm { get; init; }
+
+    /// <summary>عمق سوراخ‌های محرک اسپنر برحسب میلی‌متر (گسترش ۰٫۵٫۰).</summary>
+    public double? SpannerHoleDepthMm { get; init; }
+
+    /// <summary>پهنای شیار تخت/صلیبی و پهنای پرهٔ محرک یک‌طرفه برحسب میلی‌متر.</summary>
     public double? SlotWidthMm { get; init; }
 
-    /// <summary>عمق شیار برحسب میلی‌متر.</summary>
+    /// <summary>عمق شیار/پرهٔ محرک یک‌طرفه برحسب میلی‌متر.</summary>
     public double? SlotDepthMm { get; init; }
 
     /// <summary>طول ناحیهٔ رزوه از نوک به سمت سر؛ null یعنی تمام‌رزوه.</summary>

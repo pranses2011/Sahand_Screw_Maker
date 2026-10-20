@@ -5,7 +5,8 @@ using Sahand.Geometry.Meshing;
 namespace Sahand.Geometry.Builders;
 
 /// <summary>
-/// سازندهٔ مش پیچ — ترکیب ساق رزوه‌دار، سر (شش‌گوش/آلن/خزینه/نیم‌گرد/دکمه‌ای/فلنجی) و محرک.
+/// سازندهٔ مش پیچ — ترکیب ساق رزوه‌دار، سر (شش‌گوش/آلن/خزینه/نیم‌گرد/دکمه‌ای/فلنجی و
+/// سرهای خاص ۰٫۵٫۰: پنیری/پهن/فلیستر/وافری/خزینهٔ گنبدی/دوازده‌گوش) و محرک.
 /// </summary>
 /// <remarks>
 /// قرارداد محور (سند ۷-۵): z=۰ روی سطح اتکای سر؛ سر در z منفی؛ ساق در z ∈ [۰، L].
@@ -13,8 +14,10 @@ namespace Sahand.Geometry.Builders;
 /// و خروج شیار) تا یال‌های مشترک دقیق و مش watertight بماند.
 /// محدودهٔ پشتیبانی محرک در هر سر در PartValidator و ماتریس قابلیت مستند شده است؛
 /// ترکیب‌های پشتیبانی‌نشده با پیام فارسی رد می‌شوند (نه دکمهٔ بی‌عمل).
-/// گسترش ۰٫۴٫۰: سر دکمه‌ای (گنبد سهمی + پلتفرم قله) و سر فلنجی (دیسک + شش‌گوش) و
+/// گسترش ۰٫۴٫۰: سر دکمه‌ای (گنبد سهمی + پلتفرم قله)، سر فلنجی (دیسک + شش‌گوش) و
 /// محرک‌های امنیتی پین‌دار (آلن/تورکس با پین مرکزی).
+/// گسترش ۰٫۵٫۰: محرک‌های اسپنر (چشم‌مار) و یک‌طرفه (PocketCutter)، محرک‌های گلبرگی
+/// پنتالوب/تری‌وینگ/تورک‌ست (LobedProfile) و شش سر خاص جدید.
 /// </remarks>
 public static class BoltBuilder
 {
@@ -44,14 +47,19 @@ public static class BoltBuilder
         var length = spec.LengthUnderHeadMm;
         var topZ = -spec.HeadHeightMm;
 
-        // زوایای ویژهٔ شبکه: گوشه‌های شش‌گوش سر/آلن + خروج شیار + گذارهای تورکس.
+        // زوایای ویژهٔ شبکه: گوشه‌های شش‌گوش سر/آلن + خروج شیار + گذارهای محرک‌های گلبرگی.
         var specialAngles = new List<double>();
         if (spec.Head is (HeadStyle.Hex or HeadStyle.Flange) && spec.HeadAcrossFlatsMm is > 0)
             specialAngles.AddRange(HexCornerAngles());
+        if (spec.Head == HeadStyle.TwelvePoint && spec.HeadAcrossFlatsMm is > 0)
+            specialAngles.AddRange(PolygonCornerAngles(12));
         if (spec.Drive is (DriveStyle.HexSocket or DriveStyle.PinHex) && spec.HexSocketAcrossFlatsMm is > 0)
             specialAngles.AddRange(HexCornerAngles());
         if (spec.Drive is (DriveStyle.Torx or DriveStyle.SecurityTorx) && spec.TorxAcrossLobesMm is > 0)
             specialAngles.AddRange(TorxProfile.SpecialAngles(spec.TorxAcrossLobesMm.Value));
+        else if (spec.Drive is (DriveStyle.Pentalobe or DriveStyle.TriWing or DriveStyle.TorqSet) &&
+                 spec.TorxAcrossLobesMm is > 0)
+            specialAngles.AddRange(LobedProfile.SpecialAngles(LobeGeometryFor(spec)));
         if (spec.Drive is DriveStyle.Slot or DriveStyle.Phillips)
         {
             var headR = HeadFlatTopRadius(spec);
@@ -95,10 +103,28 @@ public static class BoltBuilder
                 BuildPanHead(mesh, spec, grid, topZ, shankRings[0]);
                 break;
             case HeadStyle.Button:
-                BuildButtonHead(mesh, spec, grid, topZ, shankRings[0]);
+                BuildDomedHead(mesh, spec, grid, topZ, shankRings[0], domeStartFraction: 0.45, apexRadiusFactor: 0.06);
                 break;
             case HeadStyle.Flange:
                 BuildFlangeHead(mesh, spec, grid, topZ, shankRings[0]);
+                break;
+            case HeadStyle.Cheese:
+                BuildCheeseHead(mesh, spec, grid, topZ, shankRings[0]);
+                break;
+            case HeadStyle.Truss:
+                BuildDomedHead(mesh, spec, grid, topZ, shankRings[0], domeStartFraction: 0.30, apexRadiusFactor: 0.25);
+                break;
+            case HeadStyle.Fillister:
+                BuildDomedHead(mesh, spec, grid, topZ, shankRings[0], domeStartFraction: 0.35, apexRadiusFactor: 0.10);
+                break;
+            case HeadStyle.Wafer:
+                BuildWaferHead(mesh, spec, grid, topZ, shankRings[0]);
+                break;
+            case HeadStyle.RaisedCountersunk:
+                BuildRaisedCountersunkHead(mesh, spec, grid, topZ, shankRings[0]);
+                break;
+            case HeadStyle.TwelvePoint:
+                BuildTwelvePointHead(mesh, spec, grid, topZ, shankRings[0]);
                 break;
             default:
                 throw new ArgumentException($"سر «{spec.Head}» در این نسخه پیاده‌سازی نشده است.");
@@ -110,7 +136,7 @@ public static class BoltBuilder
     /// <summary>شعاع رویهٔ تختِ سر برای ماشین‌آلات شیار.</summary>
     private static double HeadFlatTopRadius(BoltSpec spec) => spec.Head switch
     {
-        HeadStyle.SocketCap or HeadStyle.Pan => (spec.HeadDiameterMm ?? 0) / 2.0,
+        HeadStyle.SocketCap or HeadStyle.Pan or HeadStyle.Cheese => (spec.HeadDiameterMm ?? 0) / 2.0,
         _ => throw new ArgumentException("محرک شیاری فقط روی سر با رویهٔ تختِ دایره‌ای پشتیبانی می‌شود."),
     };
 
@@ -121,6 +147,16 @@ public static class BoltBuilder
             yield return Math.PI / 6.0 + k * Math.PI / 3.0;
     }
 
+    /// <summary>
+    /// زوایای ویژهٔ چندگوش منتظم N-وجهی — رأس‌ها روی k·۲π/N و تخت‌ها روی π/N+k·۲π/N
+    /// (هر دو در شبکه می‌نشیند تا شکل در همهٔ presetها دقیق بماند؛ گسترش ۰٫۵٫۰).
+    /// </summary>
+    private static IEnumerable<double> PolygonCornerAngles(int sides)
+    {
+        for (var k = 0; k < sides * 2; k++)
+            yield return k * Math.PI / sides;
+    }
+
     /// <summary>شعاع شش‌گوش در زاویهٔ θ — تخت‌ها روی k·۶۰°، گوشه‌ها روی ۳۰°+k·۶۰°.</summary>
     private static double HexRadius(double acrossFlatsMm, double theta)
     {
@@ -129,17 +165,40 @@ public static class BoltBuilder
         return acrossFlatsMm / 2.0 / Math.Cos(sector - Math.PI / 6.0);
     }
 
+    /// <summary>
+    /// شعاع چندگوش منتظم N-وجهی با عرض آچارخور معین در زاویهٔ θ (گسترش ۰٫۵٫۰).
+    /// </summary>
+    /// <remarks>رأس‌ها روی k·۲π/N (r = af/2/cos(π/N)) و تخت‌ها روی π/N+k·۲π/N (r = af/2).</remarks>
+    private static double PolygonRadius(double acrossFlatsMm, double theta, int sides)
+    {
+        var period = 2.0 * Math.PI / sides;
+        var sector = theta % period;
+        if (sector < 0) sector += period;
+        return acrossFlatsMm / 2.0 / Math.Cos(sector - Math.PI / sides);
+    }
+
     /// <summary>محرک حفرهٔ آلن دارد (ساده یا امنیتی پین‌دار).</summary>
     private static bool HasHexSocketDrive(BoltSpec spec) =>
         spec.Drive is DriveStyle.HexSocket or DriveStyle.PinHex;
 
-    /// <summary>محرک حفرهٔ تورکس دارد (ساده یا امنیتی پین‌دار).</summary>
-    private static bool HasTorxDrive(BoltSpec spec) =>
-        spec.Drive is DriveStyle.Torx or DriveStyle.SecurityTorx;
+    /// <summary>محرک حفرهٔ گلبرگی دارد — تورکس/تورکس امنیتی/پنتالوب/تری‌وینگ/تورک‌ست (گسترش ۰٫۵٫۰).</summary>
+    private static bool HasLobedDrive(BoltSpec spec) =>
+        spec.Drive is DriveStyle.Torx or DriveStyle.SecurityTorx or
+                DriveStyle.Pentalobe or DriveStyle.TriWing or DriveStyle.TorqSet;
+
+    /// <summary>محرک حفرهٔ سوراخ‌دار دارد — اسپنر (دو سوراخ) یا یک‌طرفه (پره‌های مورب) (گسترش ۰٫۵٫۰).</summary>
+    private static bool HasPierceDrive(BoltSpec spec) =>
+        spec.Drive is DriveStyle.Spanner or DriveStyle.OneWay;
 
     /// <summary>محرک پین امنیتی مرکزی دارد.</summary>
     private static bool HasSecurityPin(BoltSpec spec) =>
         spec.Drive is DriveStyle.PinHex or DriveStyle.SecurityTorx;
+
+    /// <summary>هندسهٔ گلبرگی محرک‌های پنتالوب/تری‌وینگ/تورک‌ست (تورکس مسیر اختصاصی TorxProfile دارد).</summary>
+    private static LobeSpec LobeGeometryFor(BoltSpec spec) =>
+        LobedProfile.ForDrive(spec.Drive, spec.TorxAcrossLobesMm ??
+            throw new ArgumentException("حفرهٔ محرک گلبرگی بدون قطر اسمی قابل ساخت نیست."))
+        ?? throw new ArgumentException($"محرک «{spec.Drive}» گلبرگی نیست.");
 
     /// <summary>سر شش‌گوش با پخ فوقانی و حفرهٔ آلن/تورکس اختیاری (با پین امنیتی اختیاری).</summary>
     private static void BuildHexHead(
@@ -153,7 +212,8 @@ public static class BoltBuilder
             ?? throw new ArgumentException("سر شش‌گوش بدون عرض آچارخور قابل ساخت نیست.");
         var chamfer = Math.Min(spec.HeadTopChamferMm, spec.HeadHeightMm / 2.0);
         var hasSocket = HasHexSocketDrive(spec);
-        var hasTorx = HasTorxDrive(spec);
+        var hasLobed = HasLobedDrive(spec);
+        var hasPierce = HasPierceDrive(spec);
 
         // پخ فوقانی ۴۵ درجه: در z ∈ [topZ, topZ+پخ] شعاع به‌اندازهٔ فاصله تا topZ کم می‌شود.
         double RadiusAt(double theta, double z) =>
@@ -162,7 +222,7 @@ public static class BoltBuilder
         var levels = DedupLevels(topZ, topZ + chamfer, 0.0);
         var headRings = RadialSurface.AddOutwardSurface(
             mesh, grid, RadiusAt, levels,
-            capFirst: !hasSocket && !hasTorx, // بدون حفره: درپوش کامل رویهٔ بالا.
+            capFirst: !hasSocket && !hasLobed && !hasPierce, // بدون حفره: درپوش کامل رویهٔ بالا.
             capLast: false);
 
         if (hasSocket)
@@ -192,15 +252,22 @@ public static class BoltBuilder
                 AddSecurityPin(mesh, spec, grid, floorZ: topZ + socketDepth, topZ, socketRings[^1]);
         }
 
-        if (hasTorx)
+        if (hasLobed)
         {
-            // گارد هندسی: پَرِ تورکس باید داخل مرزِ پخ‌خوردهٔ سر (کمینهٔ شعاع تخت) جا شود.
+            // گارد هندسی: پَرِ محرک گلبرگی باید داخل مرزِ پخ‌خوردهٔ سر (کمینهٔ شعاع تخت) جا شود.
             var nominalE = spec.TorxAcrossLobesMm
-                ?? throw new ArgumentException("حفرهٔ تورکس بدون قطر اسمی قابل ساخت نیست.");
+                ?? throw new ArgumentException("حفرهٔ محرک گلبرگی بدون قطر اسمی قابل ساخت نیست.");
             if (nominalE / 2.0 >= af / 2.0 - chamfer)
                 throw new ArgumentException(
-                    "حفرهٔ تورکس از مرز داخلی سر شش‌گوش بزرگ‌تر است؛ قطر تورکس را کم یا عرض آچارخور را زیاد کنید.");
-            AddTorxPocket(mesh, spec, grid, topZ, headRings[0]);
+                    "حفرهٔ محرک گلبرگی از مرز داخلی سر شش‌گوش بزرگ‌تر است؛ قطر محرک را کم یا عرض آچارخور را زیاد کنید.");
+            AddLobedPocket(mesh, spec, grid, topZ, headRings[0]);
+        }
+
+        if (hasPierce)
+        {
+            // محرک اسپنر/یک‌طرفه: رویهٔ تختِ سوراخ‌دار با PocketCutter (گسترش ۰٫۵٫۰).
+            AddPiercedPocket(mesh, spec, grid, headRings[0],
+                theta => HexRadius(af, theta) - chamfer, topZ);
         }
 
         // سطح اتکای سر: حلقه بین مرز ساق و مرز شش‌گوش در z=0.
@@ -237,11 +304,15 @@ public static class BoltBuilder
         var chamfer = Math.Min(spec.HeadTopChamferMm, spec.HeadHeightMm / 2.0);
         double RadiusAt(double theta, double z) => headR - Math.Max(0.0, (topZ + chamfer) - z);
 
+        var hasLobed = HasLobedDrive(spec);
+        var hasPierce = HasPierceDrive(spec);
         var headRings = RadialSurface.AddOutwardSurface(
             mesh, grid, RadiusAt,
             DedupLevels(topZ, topZ + chamfer, 0.0),
             capFirst: spec.Drive is not (DriveStyle.HexSocket or DriveStyle.PinHex or
-                                        DriveStyle.Torx or DriveStyle.SecurityTorx), // بدون حفره: درپوش کامل.
+                                        DriveStyle.Torx or DriveStyle.SecurityTorx or
+                                        DriveStyle.Pentalobe or DriveStyle.TriWing or DriveStyle.TorqSet or
+                                        DriveStyle.Spanner or DriveStyle.OneWay), // بدون حفره: درپوش کامل.
             capLast: false);
 
         if (HasHexSocketDrive(spec))
@@ -265,26 +336,34 @@ public static class BoltBuilder
                 AddSecurityPin(mesh, spec, grid, floorZ: topZ + socketDepth, topZ, socketRings[^1]);
         }
 
-        if (HasTorxDrive(spec))
+        if (hasLobed)
         {
-            // گارد هندسی: پَرِ تورکس باید داخل مرز پخ‌خوردهٔ بالای سر جا شود.
+            // گارد هندسی: پَرِ محرک گلبرگی باید داخل مرز پخ‌خوردهٔ بالای سر جا شود.
             var nominalE = spec.TorxAcrossLobesMm
-                ?? throw new ArgumentException("حفرهٔ تورکس بدون قطر اسمی قابل ساخت نیست.");
+                ?? throw new ArgumentException("حفرهٔ محرک گلبرگی بدون قطر اسمی قابل ساخت نیست.");
             if (nominalE / 2.0 >= headR - chamfer)
                 throw new ArgumentException(
-                    "حفرهٔ تورکس از مرز سر بزرگ‌تر است؛ قطر تورکس را کم یا قطر سر را زیاد کنید.");
-            AddTorxPocket(mesh, spec, grid, topZ, headRings[0]);
+                    "حفرهٔ محرک گلبرگی از مرز سر بزرگ‌تر است؛ قطر محرک را کم یا قطر سر را زیاد کنید.");
+            AddLobedPocket(mesh, spec, grid, topZ, headRings[0]);
+        }
+
+        if (hasPierce)
+        {
+            // محرک اسپنر/یک‌طرفه: رویهٔ تختِ سوراخ‌دار با PocketCutter (گسترش ۰٫۵٫۰).
+            AddPiercedPocket(mesh, spec, grid, headRings[0],
+                _ => headR - chamfer, topZ);
         }
 
         RadialSurface.AddRingCap(mesh, shankBottomRing, headRings[^1], solidBelow: true);
     }
 
     /// <summary>
-    /// حفرهٔ تورکس (شش‌پر) روی رویهٔ تختِ سر — همان الگوی حفرهٔ آلن با تابع شعاع تورکس.
+    /// حفرهٔ محرک گلبرگی (تورکس/پنتالوب/تری‌وینگ/تورک‌ست) روی رویهٔ تختِ سر —
+    /// همان الگوی حفرهٔ آلن با تابع شعاع گلبرگی (گسترش ۰٫۵٫۰: تعمیم از تورکس).
     /// </summary>
     /// <remarks>گاردهای هندسی در PartValidator آمده‌اند؛ اینجا فقط گارد ساخت هست.
     /// رویهٔ بالای سر (حلقهٔ بیرونی) باید پیشاپیش ساخته شده باشد و حلقهٔ headTopRing آن را می‌بندد.</remarks>
-    private static void AddTorxPocket(
+    private static void AddLobedPocket(
         MeshBuilder mesh,
         BoltSpec spec,
         AngularGrid grid,
@@ -292,25 +371,78 @@ public static class BoltBuilder
         int[] headTopRing)
     {
         var nominalE = spec.TorxAcrossLobesMm
-            ?? throw new ArgumentException("حفرهٔ تورکس بدون قطر اسمی قابل ساخت نیست.");
+            ?? throw new ArgumentException("حفرهٔ محرک گلبرگی بدون قطر اسمی قابل ساخت نیست.");
         var depth = spec.TorxDepthMm
-            ?? throw new ArgumentException("حفرهٔ تورکس بدون عمق قابل ساخت نیست.");
+            ?? throw new ArgumentException("حفرهٔ محرک گلبرگی بدون عمق قابل ساخت نیست.");
         if (depth >= spec.HeadHeightMm)
-            throw new ArgumentException("عمق حفرهٔ تورکس باید کمتر از ارتفاع سر باشد.");
+            throw new ArgumentException("عمق حفرهٔ محرک گلبرگی باید کمتر از ارتفاع سر باشد.");
 
-        // دیواره‌های عمودی حفره + کف — تابع شعاع تورکس مستقل از z (دیوارهٔ عمودی).
-        double TorxRadius(double theta, double z) => TorxProfile.RadiusAt(nominalE, theta);
+        // تورکس/تورکس امنیتی از موتور اختصاصی TorxProfile؛ محرک‌های جدید از LobedProfile.
+        Func<double, double> lobeRadiusAt = spec.Drive is (DriveStyle.Torx or DriveStyle.SecurityTorx)
+            ? theta => TorxProfile.RadiusAt(nominalE, theta)
+            : theta => LobedProfile.RadiusAt(LobeGeometryFor(spec), theta);
+
+        // دیواره‌های عمودی حفره + کف — تابع شعاع مستقل از z (دیوارهٔ عمودی).
+        double PocketRadius(double theta, double z) => lobeRadiusAt(theta);
         var pocketRings = RadialSurface.AddInwardSurface(
-            mesh, grid, TorxRadius,
+            mesh, grid, PocketRadius,
             DedupLevels(topZ, topZ + depth),
             capFirst: false,
             capLast: !HasSecurityPin(spec)); // کف: fan ساده یا حلقهٔ دور پین.
 
-        // رویهٔ بالای سر: حلقه بین حفرهٔ تورکس و مرز سر — نرمال −Z.
+        // رویهٔ بالای سر: حلقه بین حفرهٔ محرک و مرز سر — نرمال −Z.
         RadialSurface.AddRingCap(mesh, pocketRings[0], headTopRing, solidBelow: false);
 
         if (HasSecurityPin(spec))
             AddSecurityPin(mesh, spec, grid, floorZ: topZ + depth, topZ, pocketRings[^1]);
+    }
+
+    /// <summary>
+    /// محرک اسپنر (دو سوراخ «چشم مار») یا یک‌طرفه (پره‌های مورب) روی رویهٔ تختِ سر —
+    /// رویهٔ سوراخ‌دار + دیواره‌ها + کف‌ها با PocketCutter (گسترش ۰٫۵٫۰).
+    /// </summary>
+    /// <param name="mesh">مش مقصد.</param>
+    /// <param name="spec">مشخصات پیچ.</param>
+    /// <param name="grid">شبکهٔ زاویه‌ای مشترک.</param>
+    /// <param name="headTopRing">حلقهٔ رأس‌های مرز رویهٔ بالای سر.</param>
+    /// <param name="topRadiusAtTheta">شعاع مرز رویه در زاویهٔ θ (رویهٔ بالای سر پس از پخ).</param>
+    /// <param name="topZ">تراز رویهٔ بالای سر.</param>
+    private static void AddPiercedPocket(
+        MeshBuilder mesh,
+        BoltSpec spec,
+        AngularGrid grid,
+        int[] headTopRing,
+        Func<double, double> topRadiusAtTheta,
+        double topZ)
+    {
+        var depth = spec.Drive == DriveStyle.Spanner
+            ? spec.SpannerHoleDepthMm ??
+              throw new ArgumentException("سوراخ‌های اسپنر بدون عمق قابل ساخت نیست.")
+            : spec.SlotDepthMm ??
+              throw new ArgumentException("پره‌های محرک یک‌طرفه بدون عمق قابل ساخت نیست.");
+        if (depth >= spec.HeadHeightMm)
+            throw new ArgumentException("عمق حفرهٔ محرک باید کمتر از ارتفاع سر باشد.");
+
+        IReadOnlyList<PocketOutline> pockets;
+        if (spec.Drive == DriveStyle.Spanner)
+        {
+            var holeD = spec.SpannerHoleDiameterMm ??
+                throw new ArgumentException("سوراخ‌های اسپنر بدون قطر قابل ساخت نیست.");
+            pockets = PocketCutter.SpannerHoles(holeD, centerSpacingMm: holeD * 1.9);
+        }
+        else
+        {
+            var bladeWidth = spec.SlotWidthMm ??
+                throw new ArgumentException("پره‌های محرک یک‌طرفه بدون پهنا قابل ساخت نیست.");
+
+            // پره‌ها به کمینهٔ شعاع رویهٔ سر مقیاس می‌شوند تا همیشه داخل مرز بمانند.
+            var minTopR = double.MaxValue;
+            for (var i = 0; i < grid.SegmentCount; i++)
+                minTopR = Math.Min(minTopR, topRadiusAtTheta(grid[i]));
+            pockets = PocketCutter.OneWayBlades(minTopR, bladeWidth);
+        }
+
+        PocketCutter.Build(mesh, grid, headTopRing, topRadiusAtTheta, topZ, depth, pockets);
     }
 
     /// <summary>
@@ -434,27 +566,31 @@ public static class BoltBuilder
     }
 
     /// <summary>
-    /// سر دکمه‌ای (Button) — گنبد سهمی کم‌انحنا با لبهٔ گرد (گسترش ۰٫۴٫۰).
+    /// سر گنبدی با پلتفرم قله — پایهٔ مشترک سرهای دکمه‌ای/پهن/فلیستر (تعمیم ۰٫۵٫۰).
     /// </summary>
     /// <remarks>
     /// پروفیل گنبد: r = apex + (R − apex)·sqrt(1 − t²) — در لبهٔ پایین گنبد مماس عمودی
-    /// دارد (لبهٔ گرد واقعی) و در قله به apexR می‌رسد. با محرک حفره‌ای (آلن/تورکس/پین‌دار)،
-    /// قلهٔ گنبد تا شعاع بیشینهٔ حفره «پلتفرم تخت» می‌شود و حفره روی همان تراز ساخته می‌شود
-    /// (مدل سر دکمه‌ای آلن‌دار DIN 913). حداکثر عمق حفره تا سطح اتکا با گارد فاصلهٔ ایمن.
+    /// دارد (لبهٔ گرد واقعی) و در قله به apexR می‌رسد. با محرک حفره‌ای (آلن/گلبرگی/پین‌دار)
+    /// یا سوراخ‌دار (اسپنر/یک‌طرفه)، قلهٔ گنبد تا شعاع بیشینهٔ محرک «پلتفرم تخت» می‌شود و
+    /// محرک روی همان تراز ساخته می‌شود (مدل سر دکمه‌ای آلن‌دار DIN 913).
+    /// تمایز سرها: دکمه‌ای (۴۵٪ استوانه، قله ۶٪)، پهن Truss (۳۰٪ استوانه، قلهٔ پهن ۲۵٪)،
+    /// فلیستر (۳۵٪ استوانه، گنبد بلند با قله ۱۰٪).
     /// </remarks>
-    private static void BuildButtonHead(
+    private static void BuildDomedHead(
         MeshBuilder mesh,
         BoltSpec spec,
         AngularGrid grid,
         double topZ,
-        int[] shankBottomRing)
+        int[] shankBottomRing,
+        double domeStartFraction,
+        double apexRadiusFactor)
     {
         var headR = (spec.HeadDiameterMm ?? 0) / 2.0;
-        if (headR <= 0) throw new ArgumentException("قطر سر دکمه‌ای باید مثبت باشد.");
+        if (headR <= 0) throw new ArgumentException("قطر سر گنبدی باید مثبت باشد.");
 
         var height = spec.HeadHeightMm;
-        var domeStart = topZ + 0.45 * height; // پایین ۴۵٪ استوانه؛ بالای ۵۵٪ گنبد کم‌انحنا.
-        var apexR = Math.Max(headR * 0.06, 0.08);
+        var domeStart = topZ + domeStartFraction * height;
+        var apexR = Math.Max(headR * apexRadiusFactor, 0.08);
 
         // شعاع گنبد سهمی در z — در domeStart به R می‌رسد با مماس عمودی (لبهٔ گرد).
         double DomeRadius(double z)
@@ -466,25 +602,34 @@ public static class BoltBuilder
         double RadiusAt(double theta, double z) => z <= domeStart ? DomeRadius(z) : headR;
 
         var hasSocket = HasHexSocketDrive(spec);
-        var hasTorx = HasTorxDrive(spec);
+        var hasLobed = HasLobedDrive(spec);
+        var hasPierce = HasPierceDrive(spec);
 
-        // پلتفرم قله برای محرک حفره‌ای: گنبد تا شعاع پلتفرم ساخته می‌شود و بالایش تخت.
-        var socketMaxR = 0.0;
+        // پلتفرم قله برای محرک‌ها: گنبد تا شعاع پلتفرم ساخته می‌شود و بالایش تخت.
+        var platformR = 0.0;
         if (hasSocket)
-            socketMaxR = (spec.HexSocketAcrossFlatsMm ?? 0) / Math.Sqrt(3.0); // گوشهٔ حفرهٔ شش‌گوش.
-        if (hasTorx && socketMaxR == 0.0)
-            socketMaxR = (spec.TorxAcrossLobesMm ?? 0) / 2.0;                 // پَرِ تورکس.
+            platformR = Math.Min((spec.HexSocketAcrossFlatsMm ?? 0) / Math.Sqrt(3.0) * 1.2 + 0.25, headR * 0.9);
+        else if (hasLobed)
+            platformR = Math.Min((spec.TorxAcrossLobesMm ?? 0) / 2.0 * 1.2 + 0.25, headR * 0.9);
+        else if (spec.Drive == DriveStyle.Spanner)
+        {
+            // گسترش محرک اسپنر: نیم‌فاصلهٔ مراکز + شعاع ≈ ۱٫۴۵ برابر قطر سوراخ.
+            var holeD = spec.SpannerHoleDiameterMm ?? 0;
+            platformR = Math.Min(holeD * 1.45 * 1.15 + 0.25, headR * 0.9);
+        }
+        else if (spec.Drive == DriveStyle.OneWay)
+        {
+            // پره‌های یک‌طرفه به شعاع پلتفرم مقیاس می‌شوند و همیشه داخل آن جا می‌شوند.
+            platformR = headR * 0.7;
+        }
 
         double capZ;
-        if (socketMaxR > 0.0)
+        if (platformR > 0.0)
         {
-            // حاشیهٔ ایمن پلتفرم: شعاع پلتفرم باید از گوشهٔ حفره بزرگ‌تر باشد تا رأس‌های
-            // حلقهٔ گنبد و حلقهٔ حفره در تراز capZ هم‌مکان (و بدون اشتراک اندیس) نشوند —
-            // هم‌مکان‌شدن تقاطع کاذب و وجه بی‌مساحت می‌سازد.
-            var platformR = Math.Min(socketMaxR * 1.2 + 0.25, headR * 0.9);
+            // حاشیهٔ ایمن پلتفرم: شعاع پلتفرم باید از قله بزرگ‌تر و از مرز گنبد کوچک‌تر باشد.
             if (platformR >= headR * 0.95)
                 throw new ArgumentException(
-                    "حفرهٔ محرک از گنبد سر دکمه‌ای بزرگ‌تر است؛ قطر محرک را کم یا قطر سر را زیاد کنید.");
+                    "حفرهٔ محرک از گنبد سر بزرگ‌تر است؛ قطر محرک را کم یا قطر سر را زیاد کنید.");
             if (platformR <= apexR)
                 throw new ArgumentException(
                     "قطر محرک از قلهٔ گنبد کوچک‌تر است؛ قطر محرک را زیاد کنید.");
@@ -514,7 +659,7 @@ public static class BoltBuilder
         var headRings = RadialSurface.AddOutwardSurface(
             mesh, grid, RadiusAt,
             DedupSorted(levels),
-            capFirst: socketMaxR <= 0.0, // بدون محرک: قله با fan بسته می‌شود.
+            capFirst: platformR <= 0.0, // بدون محرک: قله با fan بسته می‌شود.
             capLast: false);
 
         if (hasSocket)
@@ -525,7 +670,7 @@ public static class BoltBuilder
             // گارد عمق: کف حفره باید با فاصلهٔ ایمن بالای سطح اتکا بماند.
             if (capZ + socketDepth >= -spec.Thread.NominalDiameterMm * 0.05)
                 throw new ArgumentException(
-                    "عمق حفرهٔ محرک روی سر دکمه‌ای بیش از حد زیاد است؛ کف حفره به سطح اتکای سر می‌رسد.");
+                    "عمق حفرهٔ محرک روی سر گنبدی بیش از حد زیاد است؛ کف حفره به سطح اتکای سر می‌رسد.");
 
             double SocketRadius(double theta, double z) => HexRadius(socketAf, theta);
             var socketRings = RadialSurface.AddInwardSurface(
@@ -541,26 +686,24 @@ public static class BoltBuilder
                 AddSecurityPin(mesh, spec, grid, floorZ: capZ + socketDepth, capZ, socketRings[^1]);
         }
 
-        if (hasTorx)
+        if (hasLobed)
         {
-            var nominalE = spec.TorxAcrossLobesMm!.Value;
             var depth = spec.TorxDepthMm!.Value;
-
             if (capZ + depth >= -spec.Thread.NominalDiameterMm * 0.05)
                 throw new ArgumentException(
-                    "عمق حفرهٔ تورکس روی سر دکمه‌ای بیش از حد زیاد است؛ کف حفره به سطح اتکای سر می‌رسد.");
+                    "عمق حفرهٔ محرک روی سر گنبدی بیش از حد زیاد است؛ کف حفره به سطح اتکای سر می‌رسد.");
+            AddLobedPocket(mesh, spec, grid, capZ, headRings[0]);
+        }
 
-            double TorxRadius(double theta, double z) => TorxProfile.RadiusAt(nominalE, theta);
-            var pocketRings = RadialSurface.AddInwardSurface(
-                mesh, grid, TorxRadius,
-                DedupLevels(capZ, capZ + depth),
-                capFirst: false,
-                capLast: !HasSecurityPin(spec));
-
-            RadialSurface.AddRingCap(mesh, pocketRings[0], headRings[0], solidBelow: false);
-
-            if (HasSecurityPin(spec))
-                AddSecurityPin(mesh, spec, grid, floorZ: capZ + depth, capZ, pocketRings[^1]);
+        if (hasPierce)
+        {
+            var depth = spec.Drive == DriveStyle.Spanner
+                ? spec.SpannerHoleDepthMm ?? throw new ArgumentException("سوراخ‌های اسپنر بدون عمق قابل ساخت نیست.")
+                : spec.SlotDepthMm ?? throw new ArgumentException("پره‌های محرک یک‌طرفه بدون عمق قابل ساخت نیست.");
+            if (capZ + depth >= -spec.Thread.NominalDiameterMm * 0.05)
+                throw new ArgumentException(
+                    "عمق حفرهٔ محرک روی سر گنبدی بیش از حد زیاد است؛ کف حفره به سطح اتکای سر می‌رسد.");
+            AddPiercedPocket(mesh, spec, grid, headRings[0], _ => platformR, capZ);
         }
 
         // سطح اتکای سر.
@@ -600,7 +743,8 @@ public static class BoltBuilder
                 "ضخامت فلنج از ارتفاع کل سر بیشتر است؛ بخش شش‌گوش باقی نمی‌ماند.");
 
         var hasSocket = HasHexSocketDrive(spec);
-        var hasTorx = HasTorxDrive(spec);
+        var hasLobed = HasLobedDrive(spec);
+        var hasPierce = HasPierceDrive(spec);
         var chamfer = Math.Min(spec.HeadTopChamferMm, hexHeight / 2.0);
 
         // بدنهٔ شش‌گوش با پخ فوقانی — از topZ تا flangeTop.
@@ -610,7 +754,7 @@ public static class BoltBuilder
         var hexRings = RadialSurface.AddOutwardSurface(
             mesh, grid, HexRadiusAt,
             DedupLevels(topZ, topZ + chamfer, flangeTop),
-            capFirst: !hasSocket && !hasTorx,
+            capFirst: !hasSocket && !hasLobed && !hasPierce,
             capLast: false);
 
         if (hasSocket)
@@ -637,29 +781,31 @@ public static class BoltBuilder
                 AddSecurityPin(mesh, spec, grid, floorZ: topZ + socketDepth, topZ, socketRings[^1]);
         }
 
-        if (hasTorx)
+        if (hasLobed)
         {
             var nominalE = spec.TorxAcrossLobesMm
-                ?? throw new ArgumentException("حفرهٔ تورکس بدون قطر اسمی قابل ساخت نیست.");
+                ?? throw new ArgumentException("حفرهٔ محرک گلبرگی بدون قطر اسمی قابل ساخت نیست.");
             if (nominalE / 2.0 >= af / 2.0 - chamfer)
                 throw new ArgumentException(
-                    "حفرهٔ تورکس از مرز داخلی شش‌گوشِ سر فلنجی بزرگ‌تر است؛ قطر تورکس را کم یا عرض آچارخور را زیاد کنید.");
+                    "حفرهٔ محرک گلبرگی از مرز داخلی شش‌گوشِ سر فلنجی بزرگ‌تر است؛ قطر محرک را کم یا عرض آچارخور را زیاد کنید.");
 
             var depth = spec.TorxDepthMm!.Value;
             if (depth >= hexHeight)
-                throw new ArgumentException("عمق حفرهٔ تورکس باید کمتر از ارتفاع بخش شش‌گوش سر فلنجی باشد.");
+                throw new ArgumentException("عمق حفرهٔ محرک گلبرگی باید کمتر از ارتفاع بخش شش‌گوش سر فلنجی باشد.");
 
-            double TorxRadius(double theta, double z) => TorxProfile.RadiusAt(nominalE, theta);
-            var pocketRings = RadialSurface.AddInwardSurface(
-                mesh, grid, TorxRadius,
-                DedupLevels(topZ, topZ + depth),
-                capFirst: false,
-                capLast: !HasSecurityPin(spec));
+            AddLobedPocket(mesh, spec, grid, topZ, hexRings[0]);
+        }
 
-            RadialSurface.AddRingCap(mesh, pocketRings[0], hexRings[0], solidBelow: false);
+        if (hasPierce)
+        {
+            var pierceDepth = spec.Drive == DriveStyle.Spanner
+                ? spec.SpannerHoleDepthMm ?? throw new ArgumentException("سوراخ‌های اسپنر بدون عمق قابل ساخت نیست.")
+                : spec.SlotDepthMm ?? throw new ArgumentException("پره‌های محرک یک‌طرفه بدون عمق قابل ساخت نیست.");
+            if (pierceDepth >= hexHeight)
+                throw new ArgumentException("عمق حفرهٔ محرک باید کمتر از ارتفاع بخش شش‌گوش سر فلنجی باشد.");
 
-            if (HasSecurityPin(spec))
-                AddSecurityPin(mesh, spec, grid, floorZ: topZ + depth, topZ, pocketRings[^1]);
+            AddPiercedPocket(mesh, spec, grid, hexRings[0],
+                theta => HexRadius(af, theta) - chamfer, topZ);
         }
 
         // دیسک فلنج — استوانهٔ کامل از flangeTop تا سطح اتکا (z=0).
@@ -677,6 +823,378 @@ public static class BoltBuilder
 
         // سطح اتکای سر: حلقه بین مرز ساق و مرز فلنج در z=0.
         RadialSurface.AddRingCap(mesh, shankBottomRing, flangeRings[^1], solidBelow: true);
+    }
+
+    /// <summary>
+    /// سر پنیری (Cheese) — استوانه با رویهٔ تخت و پخ لبه (گسترش ۰٫۵٫۰).
+    /// </summary>
+    /// <remarks>
+    /// همهٔ محرک‌های رویهٔ تخت پشتیبانی می‌شوند: شیار/صلیبی (SlotCutter)، آلن/پین‌دار،
+    /// گلبرگی (تورکس/پنتالوب/تری‌وینگ/تورک‌ست) و سوراخ‌دار (اسپنر/یک‌طرفه).
+    /// </remarks>
+    private static void BuildCheeseHead(
+        MeshBuilder mesh,
+        BoltSpec spec,
+        AngularGrid grid,
+        double topZ,
+        int[] shankBottomRing)
+    {
+        var headR = (spec.HeadDiameterMm ?? 0) / 2.0;
+        if (headR <= 0) throw new ArgumentException("قطر سر پنیری باید مثبت باشد.");
+
+        // با محرک شیاری، کل دیواره و رویه را ماشین‌آلات شیار می‌سازد (بدون پخ بالایی).
+        if (spec.Drive is DriveStyle.Slot or DriveStyle.Phillips)
+        {
+            var slotWidth = spec.SlotWidthMm!.Value;
+            var slotDepth = spec.SlotDepthMm!.Value;
+            var ringSide = SlotCutter.Build(
+                mesh, grid, headR,
+                sideFromZ: 0.0, topZ,
+                slotWidth, slotDepth,
+                phillips: spec.Drive == DriveStyle.Phillips);
+
+            RadialSurface.AddRingCap(mesh, shankBottomRing, ringSide, solidBelow: true);
+            return;
+        }
+
+        var chamfer = Math.Min(spec.HeadTopChamferMm, spec.HeadHeightMm / 2.0);
+        double RadiusAt(double theta, double z) => headR - Math.Max(0.0, (topZ + chamfer) - z);
+
+        var hasLobed = HasLobedDrive(spec);
+        var hasPierce = HasPierceDrive(spec);
+        var headRings = RadialSurface.AddOutwardSurface(
+            mesh, grid, RadiusAt,
+            DedupLevels(topZ, topZ + chamfer, 0.0),
+            capFirst: spec.Drive is not (DriveStyle.HexSocket or DriveStyle.PinHex or
+                                        DriveStyle.Torx or DriveStyle.SecurityTorx or
+                                        DriveStyle.Pentalobe or DriveStyle.TriWing or DriveStyle.TorqSet or
+                                        DriveStyle.Spanner or DriveStyle.OneWay),
+            capLast: false);
+
+        if (HasHexSocketDrive(spec))
+        {
+            var socketAf = spec.HexSocketAcrossFlatsMm!.Value;
+            var socketDepth = spec.HexSocketDepthMm!.Value;
+            if (socketDepth >= spec.HeadHeightMm)
+                throw new ArgumentException("عمق حفرهٔ آلن باید کمتر از ارتفاع سر باشد.");
+            if (socketAf / Math.Sqrt(3.0) >= headR - chamfer)
+                throw new ArgumentException(
+                    "حفرهٔ آلن از مرز رویهٔ سر پنیری بزرگ‌تر است؛ قطر حفره را کم یا قطر سر را زیاد کنید.");
+
+            double SocketRadius(double theta, double z) => HexRadius(socketAf, theta);
+            var socketRings = RadialSurface.AddInwardSurface(
+                mesh, grid, SocketRadius,
+                DedupLevels(topZ, topZ + socketDepth),
+                capFirst: false,
+                capLast: !HasSecurityPin(spec));
+
+            RadialSurface.AddRingCap(mesh, socketRings[0], headRings[0], solidBelow: false);
+
+            if (HasSecurityPin(spec))
+                AddSecurityPin(mesh, spec, grid, floorZ: topZ + socketDepth, topZ, socketRings[^1]);
+        }
+
+        if (hasLobed)
+        {
+            var nominalE = spec.TorxAcrossLobesMm
+                ?? throw new ArgumentException("حفرهٔ محرک گلبرگی بدون قطر اسمی قابل ساخت نیست.");
+            if (nominalE / 2.0 >= headR - chamfer)
+                throw new ArgumentException(
+                    "حفرهٔ محرک گلبرگی از مرز سر پنیری بزرگ‌تر است؛ قطر محرک را کم یا قطر سر را زیاد کنید.");
+            AddLobedPocket(mesh, spec, grid, topZ, headRings[0]);
+        }
+
+        if (hasPierce)
+        {
+            AddPiercedPocket(mesh, spec, grid, headRings[0], _ => headR - chamfer, topZ);
+        }
+
+        RadialSurface.AddRingCap(mesh, shankBottomRing, headRings[^1], solidBelow: true);
+    }
+
+    /// <summary>
+    /// سر وافری (Wafer) — مخروط کم‌عمق با رویهٔ تختِ کوچک (گسترش ۰٫۵٫۰).
+    /// </summary>
+    /// <remarks>
+    /// پروفیل: پخ لبهٔ رویه بالایی + مخروط خطی تا قطر پایه نزدیک ساق. محرک‌های حفره‌ای و
+    /// سوراخ‌دار روی رویهٔ تختِ بالا؛ شیار/صلیبی روی دیوارهٔ مخروطی در این نسخه نیست
+    /// (محدودیت مستندشده — SlotCutter به دیوارهٔ استوانه‌ای نیاز دارد).
+    /// </remarks>
+    private static void BuildWaferHead(
+        MeshBuilder mesh,
+        BoltSpec spec,
+        AngularGrid grid,
+        double topZ,
+        int[] shankBottomRing)
+    {
+        if (spec.Drive is DriveStyle.Slot or DriveStyle.Phillips)
+            throw new ArgumentException(
+                "محرک شیاری روی سر وافری در این نسخه پشتیبانی نمی‌شود (دیوارهٔ مخروطی؛ در برنامهٔ توسعه).");
+
+        var headR = (spec.HeadDiameterMm ?? 0) / 2.0;
+        if (headR <= 0) throw new ArgumentException("قطر سر وافری باید مثبت باشد.");
+
+        var height = spec.HeadHeightMm;
+        var chamfer = Math.Min(spec.HeadTopChamferMm, height * 0.25);
+        var topR = headR - chamfer;
+        var baseR = Math.Max(headR * 0.45, spec.Thread.NominalDiameterMm * 0.75);
+
+        if (topR <= baseR)
+            throw new ArgumentException(
+                "هندسهٔ سر وافری نامعتبر است: رویهٔ بالایی از قطر پایه کوچک‌تر می‌شود؛ ارتفاع را کم یا پخ را کوچک کنید.");
+
+        var hasSocket = HasHexSocketDrive(spec);
+        var hasLobed = HasLobedDrive(spec);
+        var hasPierce = HasPierceDrive(spec);
+
+        // پروفیل: پخ لبه [topZ, topZ+پخ] سپس مخروط خطی تا baseR در z=0.
+        double RadiusAt(double theta, double z)
+        {
+            if (z <= topZ + chamfer)
+                return headR - Math.Max(0.0, (topZ + chamfer) - z);
+            var t = Math.Clamp((z - (topZ + chamfer)) / (0.0 - (topZ + chamfer)), 0.0, 1.0);
+            return topR + t * (baseR - topR);
+        }
+
+        var headRings = RadialSurface.AddOutwardSurface(
+            mesh, grid, RadiusAt,
+            DedupLevels(topZ, topZ + chamfer, 0.0),
+            capFirst: !hasSocket && !hasLobed && !hasPierce,
+            capLast: false);
+
+        if (hasSocket)
+        {
+            var socketAf = spec.HexSocketAcrossFlatsMm!.Value;
+            var socketDepth = spec.HexSocketDepthMm!.Value;
+            if (socketDepth >= height)
+                throw new ArgumentException("عمق حفرهٔ آلن باید کمتر از ارتفاع سر وافری باشد.");
+            if (socketAf / Math.Sqrt(3.0) >= topR)
+                throw new ArgumentException(
+                    "حفرهٔ آلن از رویهٔ تختِ سر وافری بزرگ‌تر است؛ قطر حفره را کم یا قطر سر را زیاد کنید.");
+
+            double SocketRadius(double theta, double z) => HexRadius(socketAf, theta);
+            var socketRings = RadialSurface.AddInwardSurface(
+                mesh, grid, SocketRadius,
+                DedupLevels(topZ, topZ + socketDepth),
+                capFirst: false,
+                capLast: !HasSecurityPin(spec));
+
+            RadialSurface.AddRingCap(mesh, socketRings[0], headRings[0], solidBelow: false);
+
+            if (HasSecurityPin(spec))
+                AddSecurityPin(mesh, spec, grid, floorZ: topZ + socketDepth, topZ, socketRings[^1]);
+        }
+
+        if (hasLobed)
+        {
+            var nominalE = spec.TorxAcrossLobesMm
+                ?? throw new ArgumentException("حفرهٔ محرک گلبرگی بدون قطر اسمی قابل ساخت نیست.");
+            if (nominalE / 2.0 >= topR)
+                throw new ArgumentException(
+                    "حفرهٔ محرک گلبرگی از رویهٔ تختِ سر وافری بزرگ‌تر است؛ قطر محرک را کم یا قطر سر را زیاد کنید.");
+            AddLobedPocket(mesh, spec, grid, topZ, headRings[0]);
+        }
+
+        if (hasPierce)
+        {
+            AddPiercedPocket(mesh, spec, grid, headRings[0], _ => topR, topZ);
+        }
+
+        RadialSurface.AddRingCap(mesh, shankBottomRing, headRings[^1], solidBelow: true);
+    }
+
+    /// <summary>
+    /// سر خزینهٔ گنبدی (Raised Countersunk / Oval) — مخروط خزینه + کلاهک گنبدی (گسترش ۰٫۵٫۰).
+    /// </summary>
+    /// <remarks>
+    /// مخروط از headR در z=۰ (سطح اتکا) تا coneTopR در coneTopZ؛ گنبد ربع‌بیضی از coneTopR
+    /// تا قلهٔ apexR در topZ. محرک روی گنبد در این نسخه نیست (محدودیت مستندشده).
+    /// </remarks>
+    private static void BuildRaisedCountersunkHead(
+        MeshBuilder mesh,
+        BoltSpec spec,
+        AngularGrid grid,
+        double topZ,
+        int[] shankBottomRing)
+    {
+        if (spec.Drive != DriveStyle.None)
+            throw new ArgumentException(
+                "محرک روی سر خزینهٔ گنبدی در این نسخه پشتیبانی نمی‌شود (در برنامهٔ توسعه).");
+
+        var headR = (spec.HeadDiameterMm ?? 0) / 2.0;
+        if (headR <= 0) throw new ArgumentException("قطر سر خزینهٔ گنبدی باید مثبت باشد.");
+
+        var height = spec.HeadHeightMm;
+        var halfAngle = spec.CountersunkAngleDegrees / 2.0;
+
+        // ۳۵٪ ارتفاع گنبد؛ بقیه مخروط خزینه.
+        var domeHeight = height * 0.35;
+        var coneTopZ = topZ + domeHeight;
+        var coneTopR = headR - (height - domeHeight) * Math.Tan(halfAngle * Math.PI / 180.0);
+
+        if (coneTopR <= spec.Thread.NominalDiameterMm / 2.0)
+            throw new ArgumentException(
+                "ارتفاع سر خزینهٔ گنبدی نسبت به زاویه/قطر طوری است که رویهٔ بالایی از ساق کوچک‌تر می‌شود؛ قطر یا زاویه را اصلاح کنید.");
+
+        var apexR = Math.Max(coneTopR * 0.18, 0.1);
+
+        // گنبد ربع‌بیضی: t=۰ در قله (topZ) با r=apex و t=۱ در پای گنبد (coneTopZ) با r=coneTopR.
+        double DomeRadius(double z)
+        {
+            var t = Math.Clamp((z - topZ) / (coneTopZ - topZ), 0.0, 1.0);
+            return apexR + (coneTopR - apexR) * Math.Sin(t * Math.PI / 2.0);
+        }
+
+        // مخروط خطی از coneTopR در coneTopZ تا headR در z=0.
+        double RadiusAt(double theta, double z)
+        {
+            if (z <= coneTopZ) return DomeRadius(z);
+            var t = Math.Clamp((z - coneTopZ) / (0.0 - coneTopZ), 0.0, 1.0);
+            return coneTopR + t * (headR - coneTopR);
+        }
+
+        var levels = new List<double> { topZ };
+        const int domeSamples = 10;
+        for (var i = 1; i < domeSamples; i++)
+        {
+            var t = (double)i / domeSamples;
+            levels.Add(topZ + t * (coneTopZ - topZ));
+        }
+        levels.Add(coneTopZ);
+        levels.Add(0.0);
+
+        var headRings = RadialSurface.AddOutwardSurface(
+            mesh, grid, RadiusAt,
+            DedupSorted(levels),
+            capFirst: true, // قلهٔ گنبد با fan.
+            capLast: false);
+
+        RadialSurface.AddRingCap(mesh, shankBottomRing, headRings[^1], solidBelow: true);
+    }
+
+    /// <summary>
+    /// سر دوازده‌گوش (Twelve Point) — منشور ۱۲‌وجه با فلنج اختیاری (گسترش ۰٫۵٫۰).
+    /// </summary>
+    /// <remarks>
+    /// آچار دوازده‌گوش هوافضا با گشتاور بالا. بدنهٔ ۱۲گوش با پخ فوقانی؛ دیسک فلنج
+    /// اختیاری (مثل سر فلنجی) اگر قطر فلنج داده شود. محرک‌های حفره‌ای/سوراخ‌دار روی
+    /// رویهٔ بالای تخت؛ محرک شیاری پشتیبانی نمی‌شود.
+    /// </remarks>
+    private static void BuildTwelvePointHead(
+        MeshBuilder mesh,
+        BoltSpec spec,
+        AngularGrid grid,
+        double topZ,
+        int[] shankBottomRing)
+    {
+        if (spec.Drive is DriveStyle.Slot or DriveStyle.Phillips)
+            throw new ArgumentException("محرک شیاری روی سر دوازده‌گوش پشتیبانی نمی‌شود.");
+
+        var af = spec.HeadAcrossFlatsMm
+            ?? throw new ArgumentException("سر دوازده‌گوش بدون عرض آچارخور قابل ساخت نیست.");
+        const int sides = 12;
+
+        var hasFlange = spec.FlangeDiameterMm is > 0;
+        var flangeT = hasFlange
+            ? spec.FlangeThicknessMm ?? throw new ArgumentException("سر دوازده‌گوش فلنجی بدون ضخامت فلنج قابل ساخت نیست.")
+            : 0.0;
+        var flangeR = hasFlange ? spec.FlangeDiameterMm!.Value / 2.0 : 0.0;
+        var flangeTop = -flangeT;
+        var bodyHeight = flangeTop - topZ;
+
+        if (bodyHeight <= 0)
+            throw new ArgumentException(
+                "ضخامت فلنج از ارتفاع کل سر بیشتر است؛ بدنهٔ دوازده‌گوش باقی نمی‌ماند.");
+
+        if (hasFlange && flangeR <= af / 2.0 / Math.Cos(Math.PI / sides) * 1.02)
+            throw new ArgumentException(
+                "قطر فلنج باید از قطر گوشه‌های بدنهٔ دوازده‌گوش بزرگ‌تر باشد؛ دیسکی باقی نمی‌ماند.");
+
+        var hasSocket = HasHexSocketDrive(spec);
+        var hasLobed = HasLobedDrive(spec);
+        var hasPierce = HasPierceDrive(spec);
+        var chamfer = Math.Min(spec.HeadTopChamferMm, bodyHeight / 2.0);
+
+        double RadiusAt(double theta, double z) =>
+            PolygonRadius(af, theta, sides) - Math.Max(0.0, (topZ + chamfer) - z);
+
+        var bodyRings = RadialSurface.AddOutwardSurface(
+            mesh, grid, RadiusAt,
+            DedupLevels(topZ, topZ + chamfer, flangeTop),
+            capFirst: !hasSocket && !hasLobed && !hasPierce,
+            capLast: false);
+
+        if (hasSocket)
+        {
+            var socketAf = spec.HexSocketAcrossFlatsMm!.Value;
+            var socketDepth = spec.HexSocketDepthMm!.Value;
+            if (socketDepth >= bodyHeight)
+                throw new ArgumentException("عمق حفرهٔ آلن باید کمتر از ارتفاع بدنهٔ دوازده‌گوش باشد.");
+            if (socketAf / Math.Sqrt(3.0) >= af / 2.0 - chamfer)
+                throw new ArgumentException(
+                    "حفرهٔ آلن از مرز داخلی بدنهٔ دوازده‌گوش بزرگ‌تر است؛ قطر حفره را کم یا عرض آچارخور را زیاد کنید.");
+
+            double SocketRadius(double theta, double z) => HexRadius(socketAf, theta);
+            var socketRings = RadialSurface.AddInwardSurface(
+                mesh, grid, SocketRadius,
+                DedupLevels(topZ, topZ + socketDepth),
+                capFirst: false,
+                capLast: !HasSecurityPin(spec));
+
+            RadialSurface.AddRingCap(mesh, socketRings[0], bodyRings[0], solidBelow: false);
+
+            if (HasSecurityPin(spec))
+                AddSecurityPin(mesh, spec, grid, floorZ: topZ + socketDepth, topZ, socketRings[^1]);
+        }
+
+        if (hasLobed)
+        {
+            var nominalE = spec.TorxAcrossLobesMm
+                ?? throw new ArgumentException("حفرهٔ محرک گلبرگی بدون قطر اسمی قابل ساخت نیست.");
+            if (nominalE / 2.0 >= af / 2.0 - chamfer)
+                throw new ArgumentException(
+                    "حفرهٔ محرک گلبرگی از مرز داخلی بدنهٔ دوازده‌گوش بزرگ‌تر است؛ قطر محرک را کم یا عرض آچارخور را زیاد کنید.");
+
+            var depth = spec.TorxDepthMm!.Value;
+            if (depth >= bodyHeight)
+                throw new ArgumentException("عمق حفرهٔ محرک گلبرگی باید کمتر از ارتفاع بدنهٔ دوازده‌گوش باشد.");
+
+            AddLobedPocket(mesh, spec, grid, topZ, bodyRings[0]);
+        }
+
+        if (hasPierce)
+        {
+            var pierceDepth = spec.Drive == DriveStyle.Spanner
+                ? spec.SpannerHoleDepthMm ?? throw new ArgumentException("سوراخ‌های اسپنر بدون عمق قابل ساخت نیست.")
+                : spec.SlotDepthMm ?? throw new ArgumentException("پره‌های محرک یک‌طرفه بدون عمق قابل ساخت نیست.");
+            if (pierceDepth >= bodyHeight)
+                throw new ArgumentException("عمق حفرهٔ محرک باید کمتر از ارتفاع بدنهٔ دوازده‌گوش باشد.");
+
+            AddPiercedPocket(mesh, spec, grid, bodyRings[0],
+                theta => PolygonRadius(af, theta, sides) - chamfer, topZ);
+        }
+
+        if (hasFlange)
+        {
+            // دیسک فلنج — استوانهٔ کامل از flangeTop تا سطح اتکا (z=0).
+            double FlangeRadius(double theta, double z) => flangeR;
+            var flangeRings = RadialSurface.AddOutwardSurface(
+                mesh, grid, FlangeRadius,
+                DedupLevels(flangeTop, 0.0),
+                capFirst: false,
+                capLast: false);
+
+            // شانهٔ گذار: درپوش حلقه‌ای بین بدنهٔ ۱۲گوش (داخلی) و فلنج (خارجی) در flangeTop.
+            RadialSurface.AddRingCap(mesh, bodyRings[^1], flangeRings[0], solidBelow: false);
+
+            // سطح اتکای سر: حلقه بین مرز ساق و مرز فلنج در z=0.
+            RadialSurface.AddRingCap(mesh, shankBottomRing, flangeRings[^1], solidBelow: true);
+        }
+        else
+        {
+            // بدون فلنج: سطح اتکای مستقیم روی بدنهٔ ۱۲گوش.
+            RadialSurface.AddRingCap(mesh, shankBottomRing, bodyRings[^1], solidBelow: true);
+        }
     }
 
     /// <summary>سطوح را مرتب و بدون تکرار نزدیک نگه می‌دارد.</summary>
