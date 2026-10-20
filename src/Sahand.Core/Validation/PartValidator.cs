@@ -28,11 +28,18 @@ public static class PartValidator
         // ماتریس پشتیبانی سر×محرک در این نسخه (محدودیت‌ها صادقانه رد می‌شوند، نه دکمهٔ بی‌عمل).
         if (bolt.Head == HeadStyle.Hex && bolt.Drive is DriveStyle.Slot or DriveStyle.Phillips)
             result.AddError("Drive",
-                "شیار روی سر شش‌گوش در این نسخه پشتیبانی نمی‌شود (در برنامهٔ توسعه). محرک «بدون» یا «آلن» را انتخاب کنید.");
+                "شیار روی سر شش‌گوش در این نسخه پشتیبانی نمی‌شود (در برنامهٔ توسعه). محرک «بدون»، آلن یا امنیتی را انتخاب کنید.");
 
-        if (bolt.Head is HeadStyle.FlatCountersunk or HeadStyle.Pan && bolt.Drive != DriveStyle.None)
+        if (bolt.Head is HeadStyle.FlatCountersunk or HeadStyle.Pan or HeadStyle.RaisedCountersunk &&
+            bolt.Drive != DriveStyle.None)
             result.AddError("Drive",
-                $"محرک روی سر «{bolt.Head}» در این نسخه پشتیبانی نمی‌شود (در برنامهٔ توسعه). سر استوانه‌ای آلن را انتخاب کنید.");
+                $"محرک روی سر «{bolt.Head}» در این نسخه پشتیبانی نمی‌شود (در برنامهٔ توسعه). سر استوانه‌ای آلن یا پنیری را انتخاب کنید.");
+
+        // شیار تکی/صلیبی فقط روی سرهای با دیوارهٔ استوانه‌ای و رویهٔ تخت (SlotCutter).
+        if (bolt.Drive is DriveStyle.Slot or DriveStyle.Phillips &&
+            bolt.Head is not (HeadStyle.SocketCap or HeadStyle.Cheese))
+            result.AddError("Drive",
+                $"محرک شیاری روی سر «{bolt.Head}» پشتیبانی نمی‌شود؛ سر استوانه‌ای آلن یا پنیری را انتخاب کنید.");
 
         // سر خزینه: ظرفیت مخروط باید رویهٔ بالایی را بزرگ‌تر از ساق نگه دارد (گارد هندسی سازنده هم هست).
         if (bolt.Head == HeadStyle.FlatCountersunk && bolt.HeadDiameterMm is { } headD)
@@ -43,12 +50,14 @@ public static class PartValidator
                     $"ارتفاع سر خزینه ({bolt.HeadHeightMm:0.###}mm) برای قطر سر {headD:0.###}mm و زاویهٔ {bolt.CountersunkAngleDegrees:0.#}° بیش از حد بزرگ است؛ رویهٔ بالایی از ساق کوچک‌تر می‌شود. ارتفاع را کم یا قطر سر/زاویه را زیاد کنید.");
         }
 
-        // محرک‌های حفره‌ای روی سرهای پذیرا (گسترش ۰٫۴٫۰: Button/Flange هم پذیرفته می‌شوند).
+        // محرک‌های حفره‌ای روی سرهای پذیرا (گسترش ۰٫۵٫۰: پنیری/پهن/فلیستر/وافری/دوازده‌گوش هم).
         if (bolt.Drive is DriveStyle.HexSocket or DriveStyle.PinHex)
         {
-            if (bolt.Head is not (HeadStyle.SocketCap or HeadStyle.Hex or HeadStyle.Button or HeadStyle.Flange))
+            if (bolt.Head is not (HeadStyle.SocketCap or HeadStyle.Hex or HeadStyle.Button or HeadStyle.Flange or
+                                  HeadStyle.Cheese or HeadStyle.Truss or HeadStyle.Fillister or
+                                  HeadStyle.Wafer or HeadStyle.TwelvePoint))
                 result.AddError("Drive",
-                    $"حفرهٔ آلن روی سر «{bolt.Head}» در این نسخه پشتیبانی نمی‌شود؛ سر استوانه‌ای آلن، شش‌گوش، دکمه‌ای یا فلنجی را انتخاب کنید.");
+                    $"حفرهٔ آلن روی سر «{bolt.Head}» در این نسخه پشتیبانی نمی‌شود؛ سر استوانه‌ای آلن، شش‌گوش، دکمه‌ای، فلنجی، پنیری، پهن، فلیستر، وافری یا دوازده‌گوش را انتخاب کنید.");
 
             if (bolt.HexSocketAcrossFlatsMm is not > 0)
                 result.AddError("HexSocketAcrossFlatsMm", "قطر حفرهٔ آلن باید مثبت باشد.");
@@ -68,34 +77,86 @@ public static class PartValidator
                     "حفرهٔ آلن از قطر سر بزرگ‌تر می‌شود؛ قطر حفره یا قطر سر را اصلاح کنید.");
         }
 
-        // محرک تورکس (گسترش ۰٫۳٫۰) و تورکس امنیتی (۰٫۴٫۰) — خانوادهٔ سرهای حفره‌پذیر.
-        if (bolt.Drive is DriveStyle.Torx or DriveStyle.SecurityTorx)
+        // محرک‌های گلبرگی: تورکس (۰٫۳٫۰)، تورکس امنیتی (۰٫۴٫۰)، پنتالوب/تری‌وینگ/تورک‌ست (۰٫۵٫۰).
+        if (bolt.Drive is DriveStyle.Torx or DriveStyle.SecurityTorx or
+            DriveStyle.Pentalobe or DriveStyle.TriWing or DriveStyle.TorqSet)
         {
-            if (bolt.Head is not (HeadStyle.SocketCap or HeadStyle.Hex or HeadStyle.Button or HeadStyle.Flange))
+            if (bolt.Head is not (HeadStyle.SocketCap or HeadStyle.Hex or HeadStyle.Button or HeadStyle.Flange or
+                                  HeadStyle.Cheese or HeadStyle.Truss or HeadStyle.Fillister or
+                                  HeadStyle.Wafer or HeadStyle.TwelvePoint))
                 result.AddError("Drive",
-                    $"حفرهٔ تورکس روی سر «{bolt.Head}» در این نسخه پشتیبانی نمی‌شود؛ سر استوانه‌ای آلن، شش‌گوش، دکمه‌ای یا فلنجی را انتخاب کنید.");
+                    $"حفرهٔ محرک گلبرگی روی سر «{bolt.Head}» در این نسخه پشتیبانی نمی‌شود؛ سر استوانه‌ای آلن، شش‌گوش، دکمه‌ای، فلنجی، پنیری، پهن، فلیستر، وافری یا دوازده‌گوش را انتخاب کنید.");
 
             if (bolt.TorxAcrossLobesMm is not > 0)
-                result.AddError("TorxAcrossLobesMm", "قطر اسمی تورکس (روی پَرها) باید مثبت باشد.");
+                result.AddError("TorxAcrossLobesMm", "قطر اسمی محرک گلبرگی (روی پَرها) باید مثبت باشد.");
 
             if (bolt.TorxDepthMm is not > 0)
-                result.AddError("TorxDepthMm", "عمق حفرهٔ تورکس باید مثبت باشد.");
+                result.AddError("TorxDepthMm", "عمق حفرهٔ محرک گلبرگی باید مثبت باشد.");
             else if (bolt.TorxDepthMm >= bolt.HeadHeightMm)
                 result.AddError("TorxDepthMm",
-                    $"عمق حفرهٔ تورکس ({bolt.TorxDepthMm:0.###}mm) نباید از ارتفاع سر ({bolt.HeadHeightMm:0.###}mm) بیشتر یا مساوی شود؛ دیوارهٔ ته‌حفره صفر می‌شود.");
+                    $"عمق حفرهٔ محرک گلبرگی ({bolt.TorxDepthMm:0.###}mm) نباید از ارتفاع سر ({bolt.HeadHeightMm:0.###}mm) بیشتر یا مساوی شود؛ دیوارهٔ ته‌حفره صفر می‌شود.");
             else if (bolt.TorxDepthMm > bolt.HeadHeightMm * 0.8)
                 result.AddWarning("TorxDepthMm",
-                    "عمق حفرهٔ تورکس بیش از ۸۰٪ ارتفاع سر است؛ دیوارهٔ ته‌حفره نازک می‌شود.");
+                    "عمق حفرهٔ محرک گلبرگی بیش از ۸۰٪ ارتفاع سر است؛ دیوارهٔ ته‌حفره نازک می‌شود.");
 
             if (bolt.TorxAcrossLobesMm is > 0 && bolt.HeadDiameterMm is > 0 &&
                 bolt.TorxAcrossLobesMm >= bolt.HeadDiameterMm * 0.9)
                 result.AddError("TorxAcrossLobesMm",
-                    "حفرهٔ تورکس از مرز سر بزرگ می‌شود؛ قطر تورکس یا قطر سر را اصلاح کنید.");
+                    "حفرهٔ محرک گلبرگی از مرز سر بزرگ می‌شود؛ قطر محرک یا قطر سر را اصلاح کنید.");
 
             if (bolt.TorxAcrossLobesMm is > 0 && bolt.Head == HeadStyle.Hex &&
                 bolt.HeadAcrossFlatsMm is > 0 && bolt.TorxAcrossLobesMm >= bolt.HeadAcrossFlatsMm * 0.9)
                 result.AddError("TorxAcrossLobesMm",
-                    "حفرهٔ تورکس از مرز تخت‌های سر شش‌گوش بزرگ می‌شود؛ قطر تورکس یا عرض آچارخور را اصلاح کنید.");
+                    "حفرهٔ محرک گلبرگی از مرز تخت‌های سر شش‌گوش بزرگ می‌شود؛ قطر محرک یا عرض آچارخور را اصلاح کنید.");
+        }
+
+        // محرک اسپنر/«چشم مار» (گسترش ۰٫۵٫۰) — دو سوراخ گرد روی رویهٔ تخت سرهای پذیرا.
+        if (bolt.Drive == DriveStyle.Spanner)
+        {
+            if (bolt.Head is not (HeadStyle.SocketCap or HeadStyle.Hex or HeadStyle.Button or HeadStyle.Flange or
+                                  HeadStyle.Cheese or HeadStyle.Truss or HeadStyle.Fillister or
+                                  HeadStyle.Wafer or HeadStyle.TwelvePoint))
+                result.AddError("Drive",
+                    $"سوراخ‌های اسپنر روی سر «{bolt.Head}» در این نسخه پشتیبانی نمی‌شود؛ سر با رویهٔ تخت (آلن/شش‌گوش/دکمه‌ای/فلنجی/پنیری/پهن/فلیستر/وافری/دوازده‌گوش) را انتخاب کنید.");
+
+            if (bolt.SpannerHoleDiameterMm is not > 0)
+                result.AddError("SpannerHoleDiameterMm", "قطر سوراخ‌های اسپنر باید مثبت باشد.");
+
+            if (bolt.SpannerHoleDepthMm is not > 0)
+                result.AddError("SpannerHoleDepthMm", "عمق سوراخ‌های اسپنر باید مثبت باشد.");
+            else if (bolt.SpannerHoleDepthMm >= bolt.HeadHeightMm)
+                result.AddError("SpannerHoleDepthMm",
+                    $"عمق سوراخ اسپنر ({bolt.SpannerHoleDepthMm:0.###}mm) نباید از ارتفاع سر ({bolt.HeadHeightMm:0.###}mm) بیشتر یا مساوی شود.");
+
+            // گسترش چیدمان: فاصلهٔ مراکز ~۱٫۹ برابر قطر؛ گسترش کل ≈ ۲٫۹ برابر قطر سوراخ.
+            if (bolt.SpannerHoleDiameterMm is > 0 && bolt.HeadDiameterMm is > 0 &&
+                bolt.SpannerHoleDiameterMm * 2.9 >= bolt.HeadDiameterMm * 0.85)
+                result.AddError("SpannerHoleDiameterMm",
+                    $"سوراخ‌های اسپنر (گسترش ~{bolt.SpannerHoleDiameterMm * 2.9:0.###}mm) از رویهٔ سر (قطر {bolt.HeadDiameterMm:0.###}mm) بیرون می‌زند؛ قطر سوراخ را کم یا قطر سر را زیاد کنید.");
+
+            if (bolt.SpannerHoleDiameterMm is > 0 && bolt.Head == HeadStyle.Hex &&
+                bolt.HeadAcrossFlatsMm is > 0 && bolt.SpannerHoleDiameterMm * 2.9 >= bolt.HeadAcrossFlatsMm * 0.8)
+                result.AddError("SpannerHoleDiameterMm",
+                    "سوراخ‌های اسپنر از تخت‌های سر شش‌گوش بیرون می‌زند؛ قطر سوراخ را کم یا عرض آچارخور را زیاد کنید.");
+        }
+
+        // محرک یک‌طرفه (گسترش ۰٫۵٫۰) — پره‌های مورب روی رویهٔ تخت سرهای پذیرا.
+        if (bolt.Drive == DriveStyle.OneWay)
+        {
+            if (bolt.Head is not (HeadStyle.SocketCap or HeadStyle.Hex or HeadStyle.Button or HeadStyle.Flange or
+                                  HeadStyle.Cheese or HeadStyle.Truss or HeadStyle.Fillister or
+                                  HeadStyle.Wafer or HeadStyle.TwelvePoint))
+                result.AddError("Drive",
+                    $"پره‌های محرک یک‌طرفه روی سر «{bolt.Head}» در این نسخه پشتیبانی نمی‌شود؛ سر با رویهٔ تخت را انتخاب کنید.");
+
+            if (bolt.SlotWidthMm is not > 0)
+                result.AddError("SlotWidthMm", "پهنای پره‌های محرک یک‌طرفه باید مثبت باشد.");
+
+            if (bolt.SlotDepthMm is not > 0)
+                result.AddError("SlotDepthMm", "عمق پره‌های محرک یک‌طرفه باید مثبت باشد.");
+            else if (bolt.SlotDepthMm >= bolt.HeadHeightMm)
+                result.AddError("SlotDepthMm",
+                    $"عمق پره ({bolt.SlotDepthMm:0.###}mm) نباید از ارتفاع سر ({bolt.HeadHeightMm:0.###}mm) بیشتر یا مساوی شود.");
         }
 
         // محرک‌های امنیتی پین‌دار (گسترش ۰٫۴٫۰): پین باید داخل حفره جا شود و از کف بلند شود.
@@ -132,15 +193,41 @@ public static class PartValidator
         if (bolt.Head == HeadStyle.Hex && bolt.HeadAcrossFlatsMm is not > 0)
             result.AddError("HeadAcrossFlatsMm", "عرض آچارخور سر شش‌گوش باید مثبت باشد.");
 
-        if (bolt.Head is HeadStyle.SocketCap or HeadStyle.Pan or HeadStyle.Button && bolt.HeadDiameterMm is not > 0)
+        if (bolt.Head is HeadStyle.SocketCap or HeadStyle.Pan or HeadStyle.Button or
+            HeadStyle.Cheese or HeadStyle.Truss or HeadStyle.Fillister or
+            HeadStyle.Wafer or HeadStyle.RaisedCountersunk && bolt.HeadDiameterMm is not > 0)
             result.AddError("HeadDiameterMm", $"قطر سر «{bolt.Head}» باید مثبت باشد.");
 
-        // سر دکمه‌ای: محرک فقط حفره‌ای (روی پلتفرم قله) — شیار روی گنبد این نسخه نیست.
-        if (bolt.Head == HeadStyle.Button && bolt.Drive is not (
+        // سر دوازده‌گوش (گسترش ۰٫۵٫۰): عرض آچارخور الزامی؛ فلنج اختیاری با همان قواعد فلنجی.
+        if (bolt.Head == HeadStyle.TwelvePoint)
+        {
+            if (bolt.HeadAcrossFlatsMm is not > 0)
+                result.AddError("HeadAcrossFlatsMm", "عرض آچارخور سر دوازده‌گوش باید مثبت باشد.");
+
+            if (bolt.FlangeDiameterMm is > 0)
+            {
+                if (bolt.FlangeThicknessMm is not > 0)
+                    result.AddError("FlangeThicknessMm", "فلنج سر دوازده‌گوش بدون ضخامت قابل ساخت نیست.");
+
+                if (bolt.FlangeThicknessMm is > 0 && bolt.FlangeThicknessMm >= bolt.HeadHeightMm)
+                    result.AddError("FlangeThicknessMm",
+                        $"ضخامت فلنج ({bolt.FlangeThicknessMm:0.###}mm) باید از ارتفاع کل سر ({bolt.HeadHeightMm:0.###}mm) کمتر باشد.");
+
+                if (bolt.HeadAcrossFlatsMm is > 0 &&
+                    bolt.FlangeDiameterMm <= bolt.HeadAcrossFlatsMm / Math.Cos(Math.PI / 12.0) * 1.02)
+                    result.AddError("FlangeDiameterMm",
+                        "قطر فلنج باید از قطر گوشه‌های بدنهٔ دوازده‌گوش بزرگ‌تر باشد؛ دیسکی باقی نمی‌ماند.");
+            }
+        }
+
+        // سرهای گنبدی (دکمه‌ای/پهن/فلیستر): محرک فقط روی پلتفرم قله — شیار روی گنبد این نسخه نیست.
+        if (bolt.Head is (HeadStyle.Button or HeadStyle.Truss or HeadStyle.Fillister) && bolt.Drive is not (
             DriveStyle.None or DriveStyle.HexSocket or DriveStyle.Torx or
-            DriveStyle.PinHex or DriveStyle.SecurityTorx))
+            DriveStyle.PinHex or DriveStyle.SecurityTorx or
+            DriveStyle.Pentalobe or DriveStyle.TriWing or DriveStyle.TorqSet or
+            DriveStyle.Spanner or DriveStyle.OneWay))
             result.AddError("Drive",
-                "محرک روی سر دکمه‌ای در این نسخه فقط حفرهٔ آلن/تورکس (یا پین‌دار امنیتی) پشتیبانی می‌شود؛ شیار روی گنبد در برنامهٔ توسعه است.");
+                $"محرک روی سر گنبدی «{bolt.Head}» فقط حفره‌ای (آلن/گلبرگی/پین‌دار) یا سوراخ‌دار (اسپنر/یک‌طرفه) روی پلتفرم قله پشتیبانی می‌شود؛ شیار روی گنبد در برنامهٔ توسعه است.");
 
         // سر فلنجی (گسترش ۰٫۴٫۰): دیسک فلنج باید شش‌گوش را بپوشاند و در ارتفاع سر جا شود.
         if (bolt.Head == HeadStyle.Flange)
