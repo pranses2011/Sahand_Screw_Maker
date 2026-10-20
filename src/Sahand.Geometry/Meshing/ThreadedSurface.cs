@@ -196,13 +196,19 @@ public static class ThreadedSurface
             var delta = handedSign * lead * theta / (2.0 * Math.PI);
             var r = profile.Evaluate(z - delta);
 
-            // پخ دهانه: حفره در دو سر با مخروط ۴۵ درجه باز می‌شود (کمک به شروع پیچش و چاپ).
+            // پخ دهانه: حفره فقط «در دو سر» با مخروط ۴۵ درجه باز می‌شود (کمک به شروع پیچش و چاپ).
+            // اصلاح ۰٫۵٫۰: پیش‌تر Math.Max(r, holeRadius) در «تمام ارتفاع» اعمال می‌شد و
+            // نوک دندانه‌های داخلی را کامل می‌تراشید — مهره بدون رزوه از آب درمی‌آمد.
+            // اکنون جبران مخروط فقط در پنجرهٔ دهانه (mouth > 0) اعمال می‌شود؛ بدنهٔ میانی
+            // دست‌نخورده می‌ماند و رزوهٔ داخلی واقعی در تمام طول حفره ساخته می‌شود.
             if (mouthChamferMm > 0)
             {
                 var holeRadius = profile.MaxRadius; // شعاع دیوارهٔ حفره (درهٔ داخلی).
-                var bottomCone = holeRadius + Math.Clamp(mouthChamferMm - (z - zBottomMm), 0.0, mouthChamferMm);
-                var topCone = holeRadius + Math.Clamp(mouthChamferMm - (zTopMm - z), 0.0, mouthChamferMm);
-                r = Math.Max(r, Math.Max(bottomCone, topCone));
+                var bottomExtra = Math.Clamp(mouthChamferMm - (z - zBottomMm), 0.0, mouthChamferMm);
+                var topExtra = Math.Clamp(mouthChamferMm - (zTopMm - z), 0.0, mouthChamferMm);
+                var mouth = Math.Max(bottomExtra, topExtra);
+                if (mouth > 0.0)
+                    r = Math.Max(r, holeRadius + mouth);
             }
 
             return r;
