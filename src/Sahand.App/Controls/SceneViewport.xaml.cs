@@ -35,6 +35,22 @@ public partial class SceneViewport : UserControl
     private bool _dragging;
     private bool _panning;
 
+    // کرهٔ محیطی مدل فعلی در مختصات صحنه — مبنای «جا دادن» واقعی (اصلاح ۰٫۵٫۰).
+    private Point3D _meshCenter;
+    private double _meshRadius = 10;
+    private bool _hasMesh;
+
+    // آیا کاربر خودش چرخش/بزرگ‌نمایی/جابه‌جایی کرده؟ تا باز-جا دادن خودکار بعد از تغییر اندازه،
+    // نتواند قاب دستی کاربر را بازتنظیم کند.
+    private bool _userAdjusted;
+
+    // زاویه‌های پیش‌فرض نمای ایزو — «جا دادن» به این نما برمی‌گردد.
+    private const double DefaultTheta = 0.55;
+    private const double DefaultPhi = 1.05;
+
+    // حاشیهٔ قاب جا دادن — ۱۲٪ فضای خالی دور مدل.
+    private const double FitMargin = 1.12;
+
     /// <summary>رنگ نمایشی متریال مش.</summary>
     public static readonly DependencyProperty MeshColorProperty = DependencyProperty.Register(
         nameof(MeshColor), typeof(Color), typeof(SceneViewport),
@@ -50,7 +66,15 @@ public partial class SceneViewport : UserControl
     public SceneViewport()
     {
         InitializeComponent();
-        Loaded += (_, _) => UpdateCamera();
+        Loaded += (_, _) => FitToMesh();
+
+        // باز-جا دادن خودکار وقتی پنجره تغییر اندازه می‌دهد — فقط تا وقتی کاربر
+        // قاب را دستی تنظیم نکرده باشد (اصلاح ۰٫۵٫۰).
+        SizeChanged += (_, _) =>
+        {
+            if (!_userAdjusted)
+                FitToMesh();
+        };
     }
 
     /// <summary>
@@ -124,21 +148,32 @@ public partial class SceneViewport : UserControl
             // ۳) سایهٔ نرم زمین — یک صفحهٔ شفاف با گرادیان شعاعی زیر قطعه.
             AddGroundShadow(group, mesh);
 
-            // تنظیم هدف/شعاع مدار بر اساس جعبهٔ محیطی (در مختصات صحنه).
+            // کرهٔ محیطی مدل در مختصات صحنه — مبنای «جا دادن» (اصلاح ۰٫۵٫۰).
             var (minX, minY, minZ, maxX, maxY, maxZ) = mesh.Bounds();
             var centerScene = MapToScene(new MeshVertex(
                 (minX + maxX) / 2, (minY + maxY) / 2, (minZ + maxZ) / 2));
-            _target = new Point3D(centerScene.X, centerScene.Y, centerScene.Z);
-            var size = Math.Max(Math.Max(maxX - minX, maxY - minY), maxZ - minZ);
-            _orbitRadius = Math.Max(size * 2.2, 10);
+            _meshCenter = new Point3D(centerScene.X, centerScene.Y, centerScene.Z);
+            _meshRadius = Math.Max(
+                Math.Sqrt(
+                    (maxX - minX) * (maxX - minX) +
+                    (maxY - minY) * (maxY - minY) +
+                    (maxZ - minZ) * (maxZ - minZ)) / 2.0,
+                0.5);
+            _hasMesh = true;
         }
 
         PartModel.Content = group;
-        UpdateCamera();
+        _userAdjusted = false;
+        FitToMesh();
     }
 
     /// <summary>خالی‌کردن صحنه.</summary>
-    public void Clear() => PartModel.Content = null;
+    public void Clear()
+    {
+        PartModel.Content = null;
+        _hasMesh = false;
+        _userAdjusted = false;
+    }
 
     /// <summary>
     /// نرمال‌های راسی هموارِ آگاه از لبه را می‌سازد و در آرایهٔ <paramref name="normals"/>
@@ -287,6 +322,45 @@ public partial class SceneViewport : UserControl
     /// <summary>نگاشت مختصات قطعه به مختصات صحنه (محور قطعه Z → بالای صحنه).</summary>
     private static Point3D MapToScene(MeshVertex v) => new(v.X, v.Z, -v.Y);
 
+    /// <summary>
+    /// «جا دادن» واقعی مدل در نما — اصلاح ۰٫۵٫۰.
+    /// </summary>
+    /// <remarks>
+    /// پیش‌تر دکمهٔ «جا دادن» فقط UpdateCamera را صدا می‌زد که دوربین را در همان
+    /// زاویه/شعاع/هدفِ فعلی رها می‌کرد — عملاً هیچ کاری نمی‌کرد. اکنون:
+    /// ۱) هدف = مرکز کرهٔ محیطی مدل؛ ۲) فاصلهٔ دوربین از هندسهٔ منظر (FOV عمودی +
+    /// نسبت عرض/ارتفاع viewport) طوری حساب می‌شود که کرهٔ محیطی با حاشیهٔ امن
+    /// «کامل» در قاب بیفتد؛ ۳) زاویه‌ها به نمای ایزوی استاندارد برمی‌گردند.
+    /// </remarks>
+    private void FitToMesh()
+    {
+        if (_hasMesh)
+        {
+            _target = _meshCenter;
+
+            // منظر مؤثر: کوچک‌تر از FOV عمودی و FOV افقی (بر اساس نسبت تصویر).
+            var fovV = Camera.FieldOfView * Math.PI / 180.0;
+            var width = Viewport.ActualWidth;
+            var height = Viewport.ActualHeight;
+            var aspect = height > 1 ? width / height : 1.0;
+            var fovH = 2.0 * Math.Atan(Math.Tan(fovV / 2.0) * aspect);
+            var fov = Math.Max(Math.Min(fovV, fovH), 0.1);
+
+            // فاصلهٔ دوربین برای جا شدن کرهٔ محیطی با حاشیه؛ سقف/کف ایمنی عددی.
+            var half = Math.Min(fov / 2.0, Math.PI / 2.0 - 0.02);
+            _orbitRadius = Math.Clamp(_meshRadius * FitMargin / Math.Sin(half), 2.0, 5000.0);
+        }
+        else
+        {
+            // بدون مدل: نمای ایزوی پیش‌فرض دور هدفِ فعلی.
+            _orbitRadius = Math.Max(_orbitRadius, 40);
+        }
+
+        _orbitTheta = DefaultTheta;
+        _orbitPhi = DefaultPhi;
+        UpdateCamera();
+    }
+
     private void UpdateCamera()
     {
         var sinPhi = Math.Sin(_orbitPhi);
@@ -299,7 +373,11 @@ public partial class SceneViewport : UserControl
         Camera.UpDirection = new Vector3D(0, 1, 0);
     }
 
-    private void OnFitClick(object sender, RoutedEventArgs e) => UpdateCamera();
+    private void OnFitClick(object sender, RoutedEventArgs e)
+    {
+        _userAdjusted = false; // باز-جا دادن خودکار بعد از تغییر اندازه فعال می‌شود.
+        FitToMesh();
+    }
 
     private void OnFrontClick(object sender, RoutedEventArgs e)
     {
@@ -318,6 +396,7 @@ public partial class SceneViewport : UserControl
     protected override void OnMouseLeftButtonDown(MouseButtonEventArgs e)
     {
         _dragging = true;
+        _userAdjusted = true;
         _lastMouse = e.GetPosition(Viewport);
         CaptureMouse();
         base.OnMouseLeftButtonDown(e);
@@ -326,6 +405,7 @@ public partial class SceneViewport : UserControl
     protected override void OnMouseRightButtonDown(MouseButtonEventArgs e)
     {
         _panning = true;
+        _userAdjusted = true;
         _lastMouse = e.GetPosition(Viewport);
         CaptureMouse();
         base.OnMouseRightButtonDown(e);
@@ -375,6 +455,7 @@ public partial class SceneViewport : UserControl
     protected override void OnMouseWheel(MouseWheelEventArgs e)
     {
         // بزرگ‌نمایی لگاریتمی برای حس طبیعی.
+        _userAdjusted = true;
         _orbitRadius = Math.Clamp(_orbitRadius * Math.Pow(0.9, Math.Sign(e.Delta)), 2, 5000);
         UpdateCamera();
         base.OnMouseWheel(e);
